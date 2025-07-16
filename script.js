@@ -140,6 +140,34 @@ toggleSfxBtn.addEventListener('click', toggleSfx);
 toggleSfxBtnPause.addEventListener('click', toggleSfx);
 
 
+function unlockAudio() {
+  // Try to play background music briefly to unlock the audio context on mobile browsers
+  backgroundMusic.play().then(() => {
+    backgroundMusic.pause();
+    backgroundMusic.currentTime = 0;
+  }).catch(err => {
+    // Autoplay might be blocked, ignore the error
+    console.warn('Audio unlock failed:', err);
+  });
+
+  // Also try to play all SFX briefly to unlock them
+  [eggPopSound, splatSound, chickenEatSound, damageSound, gameOverSound].forEach(sound => {
+    sound.play().then(() => {
+      sound.pause();
+      sound.currentTime = 0;
+    }).catch(() => {});
+  });
+}
+
+// Start button event listener
+startBtn.addEventListener('click', () => {
+  unlockAudio();  // Unlock audio on user interaction (click/tap)
+  startMenu.style.display = 'none';
+  scoreContainer.style.display = 'block';
+  canvas.style.display = 'block';
+  startGame();
+});
+
 function getRandomInterval(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
