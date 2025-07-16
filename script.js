@@ -1,3 +1,16 @@
+import {
+  backgroundMusic,
+  eggPopSound,
+  splatSound,
+  chickenEatSound,
+  damageSound,
+  gameOverSound,
+  gameOverSoundPlayed,
+  sfxMuted,
+  musicMuted
+} from './js/music.js';
+
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreContainer = document.getElementById('score-container');
@@ -18,31 +31,6 @@ const gameOverReason = document.getElementById('game-over-reason');
 const healthBar = document.getElementById('health-bar');
 const eggDamageElement = document.getElementById('egg-damage');
 
-//Music
-const backgroundMusic = new Audio('assets/sounds/background_music.mp3');
-backgroundMusic.loop = true;
-backgroundMusic.volume = 0.5; // от 0 до 1
-let musicMuted = false;
-const toggleMusicBtn = document.getElementById('toggle-music-btn');
-const toggleMusicBtnPause = document.getElementById('toggle-music-btn-pause');
-
-
-const eggPopSound = new Audio('assets/sounds/egg_pop.ogg');
-eggPopSound.volume = 0.7;
-const splatSound = new Audio('assets/sounds/splat.mp3');
-splatSound.volume = 0.7;
-const chickenEatSound = new Audio('assets/sounds/chicken_eat.mp3');
-chickenEatSound.volume = 0.7;
-const damageSound = new Audio('assets/sounds/damage.wav');
-damageSound.volume = 0.7;
-const gameOverSound = new Audio('assets/sounds/game_over.mp3');
-gameOverSound.volume = 0.7;
-let gameOverSoundPlayed = false;
-
-let sfxMuted = false;
-const toggleSfxBtn = document.getElementById('toggle-sfx-btn');
-const toggleSfxBtnPause = document.getElementById('toggle-sfx-btn-pause');
-
 const chickenImg = new Image();
 chickenImg.src = 'assets/images/kuritsa.png';
 
@@ -59,6 +47,8 @@ const CORN_SPEED = 2;
 const WHEAT_SPEED = 2;
 const EGG_SPEED = 5;
 const SPAWN_INTERVAL = 1500;
+const BASE_SPAWN_INTERVAL = 1500;
+const MIN_SPAWN_INTERVAL = 500;
 
 //const CORN_SPAWN_INTERVAL = 10000; // 10 seconds
 //const WHEAT_SPAWN_INTERVAL = 10000; // 10 seconds
@@ -109,35 +99,12 @@ let health = MAX_HEALTH; // Initial health
 let nextCornInterval = getRandomInterval(CORN_MIN_INTERVAL, CORN_MAX_INTERVAL);
 let nextWheatInterval = getRandomInterval(WHEAT_MIN_INTERVAL, WHEAT_MAX_INTERVAL);
 
-function toggleMusic() {
-  musicMuted = !musicMuted;
 
-  if (musicMuted) {
-    backgroundMusic.pause();
-  } else {
-    backgroundMusic.play().catch(err => console.warn("Autoplay blocked:", err));
-  }
-
-  const newText = musicMuted ? '🎵 Music: Off' : '🎵 Music: On';
-  toggleMusicBtn.textContent = newText;
-  toggleMusicBtnPause.textContent = newText;
+function getDynamicSpawnInterval(score) {
+  const adjustedInterval = BASE_SPAWN_INTERVAL - Math.min(score, 500) * 2;
+  return Math.max(adjustedInterval, MIN_SPAWN_INTERVAL);
+  //return Math.max(BASE_SPAWN_INTERVAL - score * 1.5, MIN_SPAWN_INTERVAL);
 }
-
-
-toggleMusicBtn.addEventListener('click', toggleMusic);
-toggleMusicBtnPause.addEventListener('click', toggleMusic);
-
-
-function toggleSfx() {
-  sfxMuted = !sfxMuted;
-
-  const newText = sfxMuted ? '🔇 SFX: Off' : '🔈 SFX: On';
-  toggleSfxBtn.textContent = newText;
-  toggleSfxBtnPause.textContent = newText;
-}
-
-toggleSfxBtn.addEventListener('click', toggleSfx);
-toggleSfxBtnPause.addEventListener('click', toggleSfx);
 
 function getRandomInterval(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -309,7 +276,8 @@ function checkCollisions() {
 }
 
 function spawnEnemy() {
-  const emojis = ['🥦', '🥕', '🍆'];
+  //const emojis = ['🥦', '🥕', '🍆'];
+  const emojis = ['🦊', '🐺', '🐶', '😼'];
   const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
   const x = Math.random() * (canvas.width - ENEMY_SIZE - EDGE_MARGIN * 2) + EDGE_MARGIN;
   const maxHits = Math.floor(score / 100) + 1; // Increase toughness with score
@@ -390,6 +358,7 @@ function gameLoop(timestamp) {
 
 
   if (timestamp - lastSpawnTime > SPAWN_INTERVAL) {
+  //if (timestamp - lastSpawnTime > getDynamicSpawnInterval(score)) {
     spawnEnemy();
     lastSpawnTime = timestamp;
   }
