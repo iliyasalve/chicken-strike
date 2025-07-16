@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chicken Strike</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="assets/images/kuritsa.png" type="image/png">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    <div id="score-container">
+      <span id="current-score">Score: 0</span> <br/>
+      <span id="high-score">High Score: 0</span>
+    </div>
+    <div id="health-container">
+      <div id="health-bar"></div>
+      <div id="egg-damage">Egg Damage: 1</div>
+    </div>
+    <div id="touch-controls">
+      <button id="left-btn">⬅</button>
+      <button id="right-btn">➡</button>
+      <button id="shoot-btn">🔫</button>
+    </div>
+    <div id="start-menu">
+      <h1>Chicken Strike</h1>
+      <button id="start-btn">Start Game</button>
+      <div class="audio-buttons">
+        <button id="toggle-music-btn">🎵 Music: On</button>
+        <button id="toggle-sfx-btn">🔊 SFX: On</button>
+      </div>
+    </div>
+    <div id="game-over-screen" style="display: none;">
+      <h1>Game Over</h1>
+      <p id="game-over-reason"></p>
+      <button id="restart-btn">Restart</button>
+      <button id="menu-btn-game-over">Main Menu</button>
+    </div>
+    <div id="pause-menu" style="display: none;">
+      <h1>Paused</h1>
+      <button id="resume-btn">Resume</button>
+      <button id="menu-btn-pause">Main Menu</button>
+      <div class="audio-buttons">
+        <button id="toggle-music-btn-pause">🎵 Music: On</button>
+        <button id="toggle-sfx-btn-pause">🔊 SFX: On</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
