@@ -43,8 +43,6 @@ let sfxMuted = false;
 const toggleSfxBtn = document.getElementById('toggle-sfx-btn');
 const toggleSfxBtnPause = document.getElementById('toggle-sfx-btn-pause');
 
-let audioUnlocked = false;
-
 const chickenImg = new Image();
 chickenImg.src = 'assets/images/kuritsa.png';
 
@@ -140,46 +138,6 @@ function toggleSfx() {
 
 toggleSfxBtn.addEventListener('click', toggleSfx);
 toggleSfxBtnPause.addEventListener('click', toggleSfx);
-
-
-
-function unlockAudio() {
-  if (audioUnlocked) return; // unlock only once
-
-  const silentPlay = (audio) => {
-    audio.volume = 0;
-    return audio.play()
-      .then(() => {
-        audio.pause();
-        audio.currentTime = 0;
-        audio.volume = 1;
-      })
-      .catch(() => {}); // ignore errors
-  };
-
-  // Play all sounds silently to unlock them
-  Promise.all([
-    silentPlay(backgroundMusic),
-    silentPlay(eggPopSound),
-    silentPlay(splatSound),
-    silentPlay(chickenEatSound),
-    silentPlay(damageSound),
-    silentPlay(gameOverSound),
-  ]).then(() => {
-    audioUnlocked = true;
-  });
-}
-
-
-startBtn.addEventListener('click', () => {
-  unlockAudio();
-  startMenu.style.display = 'none';
-  scoreContainer.style.display = 'block';
-  canvas.style.display = 'block';
-  startGame();
-});
-
-
 
 function getRandomInterval(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
