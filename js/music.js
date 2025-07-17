@@ -21,6 +21,10 @@ const gameOverSound = new Audio('assets/sounds/game_over.mp3');
 gameOverSound.volume = 0.7;
 let gameOverSoundPlayed = false;
 
+const victorySound = new Audio('assets/sounds/victory.mp3');
+victorySound.volume = 0.7;
+let victorySoundPlayed = false;
+
 let sfxMuted = false;
 
 const toggleMusicBtn = document.getElementById('toggle-music-btn');
@@ -65,6 +69,8 @@ export {
   damageSound,
   gameOverSound,
   gameOverSoundPlayed,
+  victorySound,
+  victorySoundPlayed,
   sfxMuted,
   musicMuted
 };

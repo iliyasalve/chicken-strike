@@ -6,10 +6,15 @@ import {
   damageSound,
   gameOverSound,
   gameOverSoundPlayed,
+  victorySound,
+  victorySoundPlayed,
   sfxMuted,
   musicMuted
 } from './js/music.js';
 
+//DEBUG
+const DEBUG_HITBOXES = false;
+let SCORE_BEFORE_BOSS = 1200;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -113,6 +118,121 @@ function setGrassState(state) {
   }
 }
 
+////////// hereBOSS
+const BOSS_SIZE = 100;
+const BOSS_HEALTH = 100;
+const BOSS_SPEED = 1;
+
+let boss = null; // объект босса
+let bossSpawned = false;
+
+function spawnBoss() {
+  const x = Math.random() * (canvas.width - BOSS_SIZE); // Случайная позиция по оси X
+  const y = -BOSS_SIZE;  // Босс появляется сверху экрана
+  boss = {
+    x: x,
+    y: y,
+    width: BOSS_SIZE,
+    height: BOSS_SIZE,
+    health: BOSS_HEALTH,
+    speed: BOSS_SPEED,
+    emoji: '👹' // Или любой другой символ
+  };
+}
+
+function updateBoss() {
+  if (!boss) return;
+
+  boss.y += boss.speed;
+
+  // Проверка, если босс вышел за нижнюю границу экрана — игрок проиграл
+  if (boss.y > canvas.height) {
+    boss = null;
+    health = 0;
+    updateHealthBar();
+
+    gameOver = true;
+    gameOverReason.textContent = 'The boss got past the Chicken!';
+    gameOverScreen.style.display = 'flex';
+    setGrassState('static');
+
+    if (!gameOverSoundPlayed && !sfxMuted) {
+      gameOverSound.play().catch(err => console.warn("Sound play blocked:", err));
+      gameOverSoundPlayed = true;
+    }
+    return;  // Завершаем функцию, чтобы не выполнять дальнейшие проверки
+  }
+
+  // Проверка на попадание яйца в босса
+  eggs = eggs.filter(egg => {
+    if (isColliding(egg, boss)) {
+      boss.health -= eggDamage;
+
+      if (!sfxMuted) {
+        splatSound.currentTime = 0;
+        splatSound.play().catch(err => console.warn("Sound play blocked:", err));
+      }
+
+      // Победа!
+      if (boss.health <= 0) {
+        boss = null;
+        score += 500;
+        updateScore();
+        updateHighScore();
+
+        gameOver = true;
+        gameOverReason.textContent = 'Victory! The Chicken defeated the boss!';
+        gameOverScreen.style.display = 'flex';
+        setGrassState('static');
+
+        if (!victorySoundPlayed && !sfxMuted) {
+          victorySound.play().catch(err => console.warn("Sound play blocked:", err));
+          victorySoundPlayed = true;
+        }
+      }
+
+      return false; // удалить яйцо
+    }
+
+    return true;
+  });
+
+  // Проверка столкновения с игроком
+  if (isColliding(chicken, boss)) {
+    boss = null;
+    health = 0;
+    updateHealthBar();
+
+    gameOver = true;
+    gameOverReason.textContent = 'The Chicken was crushed by the boss!';
+    gameOverScreen.style.display = 'flex';
+    setGrassState('static');
+
+    if (!gameOverSoundPlayed && !sfxMuted) {
+      gameOverSound.play().catch(err => console.warn("Sound play blocked:", err));
+      gameOverSoundPlayed = true;
+    }
+  }
+}
+
+function drawBoss() {
+  if (!boss) return;
+  ctx.font = '80px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+  
+  ctx.textBaseline = 'top';
+  const visualYOffset = 10;
+
+  ctx.fillText(boss.emoji, boss.x, boss.y + visualYOffset);
+
+  if (DEBUG_HITBOXES) {
+    ctx.strokeStyle = 'purple';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(boss.x, boss.y, boss.width, boss.height);
+  }
+}
+
+//////////
+
 function getDynamicSpawnInterval(score) {
   const adjustedInterval = BASE_SPAWN_INTERVAL - Math.min(score, 500) * 2;
   return Math.max(adjustedInterval, MIN_SPAWN_INTERVAL);
@@ -158,6 +278,12 @@ function drawChicken() {
   } else {
     ctx.drawImage(chickenImg, chicken.x, chicken.y, chicken.width, chicken.height);
   }
+
+  if (DEBUG_HITBOXES) {
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(chicken.x, chicken.y, chicken.width, chicken.height);
+  }
 }
 
 function drawEggs() {
@@ -174,7 +300,18 @@ function drawEnemies() {
   ctx.fillStyle = 'green';
   enemies.forEach(enemy => {
     ctx.font = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
-    ctx.fillText(enemy.emoji, enemy.x, enemy.y);
+    
+    // for y-position collision
+    ctx.textBaseline = 'top';
+    const visualYOffset = 15; 
+ 
+    ctx.fillText(enemy.emoji, enemy.x, enemy.y + visualYOffset);
+
+    if (DEBUG_HITBOXES) {
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(enemy.x, enemy.y, enemy.width, enemy.height);
+    }
   });
 }
 
@@ -297,6 +434,18 @@ function checkCollisions() {
 }
 
 function spawnEnemy() {
+  // hereBOSS
+  if (score >= SCORE_BEFORE_BOSS && !boss && !bossSpawned) {
+    spawnBoss();
+    bossSpawned = true;
+    return;
+  }
+
+  if (boss || bossSpawned) {
+    // Босс уже на сцене или был заспавнен — обычных врагов не спавним
+    return;
+  }
+
   //const emojis = ['🥦', '🥕', '🍆'];
   const emojis = ['🦊', '🐺', '🐶', '😼'];
   const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
@@ -311,6 +460,7 @@ function resetGame() {
   chicken.y = canvas.height - CHICKEN_HEIGHT - 10;
   chicken.speed = 5; // Reset speed
   ENEMY_SPEED = 2;
+  boss = null; //hereBOSS
   eggs = [];
   enemies = [];
   corns = [];
@@ -320,6 +470,7 @@ function resetGame() {
   speedBoostActive = false; // Reset speed boost
   missedEnemies = 0; // Reset missed enemies
   health = MAX_HEALTH; // Reset health
+  bossSpawned = false // hereBOSS
   updateScore();
   updateHealthBar();
   gameOver = false;
@@ -367,11 +518,13 @@ function gameLoop(timestamp) {
   drawChicken();
   drawEggs();
   drawEnemies();
+  drawBoss(); //hereBOSS
   drawCorns();
   drawWheats();
 
   updateEggs();
   updateEnemies();
+  updateBoss(); //hereBOSS
   updateCorns();
   updateWheats();
 
