@@ -99,6 +99,19 @@ let health = MAX_HEALTH; // Initial health
 let nextCornInterval = getRandomInterval(CORN_MIN_INTERVAL, CORN_MAX_INTERVAL);
 let nextWheatInterval = getRandomInterval(WHEAT_MIN_INTERVAL, WHEAT_MAX_INTERVAL);
 
+const gameCanvas = document.getElementById('gameCanvas');
+
+function setGrassState(state) {
+  gameCanvas.classList.remove('grass-static', 'grass-moving', 'grass-boost');
+
+  if (state === 'static') {
+    gameCanvas.classList.add('grass-static');
+  } else if (state === 'moving') {
+    gameCanvas.classList.add('grass-moving');
+  } else if (state === 'boost') {
+    gameCanvas.classList.add('grass-boost');
+  }
+}
 
 function getDynamicSpawnInterval(score) {
   const adjustedInterval = BASE_SPAWN_INTERVAL - Math.min(score, 500) * 2;
@@ -176,6 +189,12 @@ function updateEnemies() {
 
   ENEMY_SPEED = 2 + Math.floor(score / 200);
 
+  if (ENEMY_SPEED > 4) {
+    setGrassState('boost');
+  } else {
+    setGrassState('moving'); 
+  }
+
   enemies = enemies.filter(enemy => {
     enemy.y += ENEMY_SPEED;
 
@@ -185,6 +204,7 @@ function updateEnemies() {
       if (missedEnemies >= MAX_MISSED_ENEMIES) {
         gameOver = true;
         gameOverReason.textContent = 'Too many enemies passed by!';
+        setGrassState('static');
       }
 
       return false; 
@@ -229,6 +249,7 @@ function checkCollisions() {
       if (health <= 0) {
         gameOver = true;
         gameOverReason.textContent = 'You were hit by an enemy!';
+        setGrassState('static');
       }
     }
   });
@@ -431,8 +452,10 @@ window.addEventListener('keydown', (e) => {
     paused = !paused;
     if (paused) {
       pauseMenu.style.display = 'flex';
+      setGrassState('static'); 
     } else {
       pauseMenu.style.display = 'none';
+      setGrassState('moving');
     }
   }
 });
@@ -534,6 +557,7 @@ startBtn.addEventListener('click', () => {
   startMenu.style.display = 'none';
   scoreContainer.style.display = 'block';
   canvas.style.display = 'block';
+  setGrassState('moving');
   startGame();
 });
 
@@ -549,6 +573,8 @@ menuBtnGameOver.addEventListener('click', () => {
 
   backgroundMusic.pause();
   backgroundMusic.currentTime = 0;
+
+  setGrassState('static');
 });
 
 menuBtnPause.addEventListener('click', () => {
@@ -557,11 +583,16 @@ menuBtnPause.addEventListener('click', () => {
 
   backgroundMusic.pause();
   backgroundMusic.currentTime = 0;
+
+  setGrassState('static');
 });
 
 resumeBtn.addEventListener('click', () => {
   paused = false;
   pauseMenu.style.display = 'none';
+
+  setGrassState('moving');
+
   requestAnimationFrame(gameLoop); 
 });
 
