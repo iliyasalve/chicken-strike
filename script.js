@@ -5,7 +5,8 @@ import {
   chickenEatSound,
   damageSound,
   gameOverSound,
-  gameOverSoundPlayed,
+  soundState,
+  //gameOverSoundPlayed,
   victorySound,
   victorySoundPlayed,
   sfxMuted,
@@ -156,9 +157,9 @@ function updateBoss() {
     gameOverScreen.style.display = 'flex';
     setGrassState('static');
 
-    if (!gameOverSoundPlayed && !sfxMuted) {
+    if (!soundState.gameOverSoundPlayed && !sfxMuted) {
       gameOverSound.play().catch(err => console.warn("Sound play blocked:", err));
-      gameOverSoundPlayed = true;
+      soundState.gameOverSoundPlayed = true;
     }
     return;  // Завершаем функцию, чтобы не выполнять дальнейшие проверки
   }
@@ -208,9 +209,9 @@ function updateBoss() {
     gameOverScreen.style.display = 'flex';
     setGrassState('static');
 
-    if (!gameOverSoundPlayed && !sfxMuted) {
+    if (!soundState.gameOverSoundPlayed && !sfxMuted) {
       gameOverSound.play().catch(err => console.warn("Sound play blocked:", err));
-      gameOverSoundPlayed = true;
+      soundState.gameOverSoundPlayed = true;
     }
   }
 }
@@ -491,9 +492,9 @@ function gameLoop(timestamp) {
   if (gameOver) {
     gameOverScreen.style.display = 'flex';
 
-    if (!gameOverSoundPlayed && !sfxMuted) {
+    if (!soundState.gameOverSoundPlayed && !sfxMuted) {
       gameOverSound.play().catch(err => console.warn("Sound play blocked:", err));
-      gameOverSoundPlayed = true;
+      soundState.gameOverSoundPlayed = true;
     }
 
     return;
@@ -586,6 +587,10 @@ window.addEventListener('keydown', (e) => {
   } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
     chicken.dx = chicken.speed;
   } else if (e.code === 'Space') {
+
+    // Off Space buttom
+    if (startMenu.style.display !== 'none') return;
+
     const now = Date.now();
     if (now - lastShotTime > SHOOT_COOLDOWN) {
       eggs.push({
@@ -602,6 +607,9 @@ window.addEventListener('keydown', (e) => {
       }
     }
   } else if (e.code === 'KeyP') {
+    // Off Pause buttom
+    if (startMenu.style.display !== 'none') return;
+
     paused = !paused;
     if (paused) {
       pauseMenu.style.display = 'flex';

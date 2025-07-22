@@ -19,7 +19,11 @@ damageSound.volume = 0.7;
 
 const gameOverSound = new Audio('assets/sounds/game_over.mp3');
 gameOverSound.volume = 0.7;
-let gameOverSoundPlayed = false;
+//let gameOverSoundPlayed = false;
+
+export const soundState = {
+  gameOverSoundPlayed: false
+};
 
 const victorySound = new Audio('assets/sounds/victory.mp3');
 victorySound.volume = 0.7;
@@ -68,7 +72,7 @@ export {
   chickenEatSound,
   damageSound,
   gameOverSound,
-  gameOverSoundPlayed,
+  //gameOverSoundPlayed,
   victorySound,
   victorySoundPlayed,
   sfxMuted,
