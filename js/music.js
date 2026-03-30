@@ -1,35 +1,57 @@
-// music.js
+// ============ AUDIO POOL (фикс для Safari) ============
+
+function createAudioPool(src, size = 4, volume = 0.7) {
+  const pool = [];
+  for (let i = 0; i < size; i++) {
+    const audio = new Audio(src);
+    audio.volume = volume;
+    pool.push(audio);
+  }
+  let index = 0;
+
+  return {
+    play() {
+      const audio = pool[index];
+      index = (index + 1) % pool.length;
+
+      // Safari-safe: клонируем если занят
+      if (!audio.paused) {
+        audio.currentTime = 0;
+      }
+
+      const playPromise = audio.play();
+      if (playPromise) {
+        playPromise.catch(() => {});
+      }
+    }
+  };
+}
+
+// ============ MUSIC ============
 
 const backgroundMusic = new Audio('assets/sounds/background_music.mp3');
 backgroundMusic.loop = true;
-backgroundMusic.volume = 0.5; 
-let musicMuted = false;
+backgroundMusic.volume = 0.5;
 
-const eggPopSound = new Audio('assets/sounds/egg_pop.ogg');
-eggPopSound.volume = 0.7;
+// ============ SFX (пулы вместо одиночных Audio) ============
 
-const splatSound = new Audio('assets/sounds/splat.mp3');
-splatSound.volume = 0.7;
+const eggPopSound = createAudioPool('assets/sounds/egg_pop.ogg', 4, 0.7);
+const splatSound = createAudioPool('assets/sounds/splat.mp3', 6, 0.7);
+const chickenEatSound = createAudioPool('assets/sounds/chicken_eat.mp3', 3, 0.7);
+const damageSound = createAudioPool('assets/sounds/damage.wav', 3, 0.7);
+const gameOverSound = createAudioPool('assets/sounds/game_over.mp3', 2, 0.7);
+const victorySound = createAudioPool('assets/sounds/victory.mp3', 2, 0.7);
 
-const chickenEatSound = new Audio('assets/sounds/chicken_eat.mp3');
-chickenEatSound.volume = 0.7;
-
-const damageSound = new Audio('assets/sounds/damage.wav');
-damageSound.volume = 0.7;
-
-const gameOverSound = new Audio('assets/sounds/game_over.mp3');
-gameOverSound.volume = 0.7;
-//let gameOverSoundPlayed = false;
+// ============ STATE ============
 
 export const soundState = {
-  gameOverSoundPlayed: false
+  gameOverSoundPlayed: false,
+  victorySoundPlayed: false,
+  sfxMuted: false,
+  musicMuted: false
 };
 
-const victorySound = new Audio('assets/sounds/victory.mp3');
-victorySound.volume = 0.7;
-let victorySoundPlayed = false;
-
-let sfxMuted = false;
+// ============ CONTROLS ============
 
 const toggleMusicBtn = document.getElementById('toggle-music-btn');
 const toggleMusicBtnPause = document.getElementById('toggle-music-btn-pause');
@@ -37,33 +59,33 @@ const toggleSfxBtn = document.getElementById('toggle-sfx-btn');
 const toggleSfxBtnPause = document.getElementById('toggle-sfx-btn-pause');
 
 function toggleMusic() {
-  musicMuted = !musicMuted;
+  soundState.musicMuted = !soundState.musicMuted;
 
-  if (musicMuted) {
+  if (soundState.musicMuted) {
     backgroundMusic.pause();
   } else {
-    backgroundMusic.play().catch(err => console.warn("Autoplay blocked:", err));
+    backgroundMusic.play().catch(() => {});
   }
 
-  const newText = musicMuted ? '🎵 Music: Off' : '🎵 Music: On';
+  const newText = soundState.musicMuted ? '🎵 Music: Off' : '🎵 Music: On';
   toggleMusicBtn.textContent = newText;
   toggleMusicBtnPause.textContent = newText;
 }
 
 function toggleSfx() {
-  sfxMuted = !sfxMuted;
+  soundState.sfxMuted = !soundState.sfxMuted;
 
-  const newText = sfxMuted ? '🔇 SFX: Off' : '🔈 SFX: On';
+  const newText = soundState.sfxMuted ? '🔇 SFX: Off' : '🔈 SFX: On';
   toggleSfxBtn.textContent = newText;
   toggleSfxBtnPause.textContent = newText;
 }
 
 toggleMusicBtn.addEventListener('click', toggleMusic);
 toggleMusicBtnPause.addEventListener('click', toggleMusic);
-
 toggleSfxBtn.addEventListener('click', toggleSfx);
 toggleSfxBtnPause.addEventListener('click', toggleSfx);
 
+// ============ EXPORT ============
 
 export {
   backgroundMusic,
@@ -72,9 +94,5 @@ export {
   chickenEatSound,
   damageSound,
   gameOverSound,
-  //gameOverSoundPlayed,
-  victorySound,
-  victorySoundPlayed,
-  sfxMuted,
-  musicMuted
+  victorySound
 };

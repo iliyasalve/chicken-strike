@@ -14,32 +14,110 @@
       <span id="current-score">Score: 0</span> <br/>
       <span id="high-score">High Score: 0</span>
     </div>
+
     <div id="health-container">
-      <div id="health-bar"></div>
-      <div id="egg-damage">Egg Damage: 1</div>
+
+      <div class="ui-block">
+        <div class="ui-label">❤️ Health</div>
+        <div id="health-bar"></div>
+      </div>
+
+      <div class="ui-block">
+        <div id="egg-damage" class="ui-label">🥚 Egg Damage: 1</div>
+      </div>
+
+      <div class="ui-block">
+        <div class="ui-label">🚨 Missed</div>
+        <div id="missed-bar"></div>
+      </div>
+
     </div>
+
+
     <div id="touch-controls">
       <button id="left-btn">⬅</button>
       <button id="right-btn">➡</button>
       <button id="shoot-btn">🔫</button>
     </div>
     <div id="start-menu">
-      <h1>Chicken Strike</h1>
-      <button id="start-btn">Start Game</button>
-      <div class="audio-buttons">
-        <button id="toggle-music-btn">🎵 Music: On</button>
-        <button id="toggle-sfx-btn">🔊 SFX: On</button>
-      </div>
+  <h1>🐔 Chicken Strike</h1>
+  <button id="start-btn">Start Game</button>
+  <button id="rules-btn">📖 How to Play</button>
+  <div class="audio-buttons">
+    <button id="toggle-music-btn">🎵 Music: On</button>
+    <button id="toggle-sfx-btn">🔊 SFX: On</button>
+  </div>
+</div>
+
+<!-- RULES MODAL -->
+<div id="rules-modal" style="display: none;">
+  <div id="rules-content">
+    <h2>📖 How to Play</h2>
+
+    <div class="rules-lore">
+      <p>
+        <strong>The coop is under attack!</strong><br>
+        You are the Battle Chicken — the farm's last defender.
+        Forest creatures — foxes 🦊, wolves 🐺, feral dogs 🐶,
+        and sneaky cats 😼 — are trying to take over the coop!
+      </p>
+      <p>
+        Your weapon? Eggs. Yes, regular eggs.
+        But don't worry — they're surprisingly effective. 🥚💥
+      </p>
     </div>
-    <div id="game-over-screen" style="display: none;">
-      <h1>Game Over</h1>
-      <p id="game-over-reason"></p>
-      <button id="restart-btn">Restart</button>
-      <button id="menu-btn-game-over">Main Menu</button>
+
+    <div class="rules-section">
+      <h3>🎮 Controls</h3>
+      <table class="rules-table">
+        <tr><td>⬅️➡️</td><td>Arrow keys or A / D — move</td></tr>
+        <tr><td>🥚</td><td>Spacebar or 🔫 button — shoot</td></tr>
+        <tr><td>⏸️</td><td>P — pause the game</td></tr>
+      </table>
     </div>
+
+    <div class="rules-section">
+      <h3>✨ Power-ups</h3>
+      <table class="rules-table">
+        <tr><td>🌽</td><td>Corn — speed boost + egg damage up</td></tr>
+        <tr><td>🌾</td><td>Wheat — restores 1 health point</td></tr>
+      </table>
+    </div>
+
+    <div class="rules-section">
+      <h3>⚠️ Watch out!</h3>
+      <ul class="rules-list">
+        <li>❤️ Enemies deal damage on contact</li>
+        <li>🚨 Let 10 enemies pass — game over!</li>
+        <li>📈 Enemies get faster and tougher as your score grows — 
+      don't forget to grab 🌽 <strong>Corn</strong> to boost your speed 
+      and egg damage, or you won't be able to defeat them!</li>
+      <li>👹 Score enough points and face the <strong>BOSS</strong>...</li>
+      </ul>
+    </div>
+
+    <p class="rules-footer">Good luck, soldier! Defend the coop! 🐔🛡️</p>
+
+    <button id="rules-close-btn">Got it!</button>
+  </div>
+</div>
+
+   <div id="game-over-screen" style="display: none;">
+  <h1>Game Over</h1>
+  <p id="game-over-reason"></p>
+  <div style="margin: 15px 0; width: 100%;">
+    <input id="leaderboard-username" type="text" placeholder="Your nickname" style="padding: 8px; width: 70%; margin-right: 5px;">
+    <button id="submit-leaderboard-btn" style="padding: 8px;">Save Score</button>
+  </div>
+  <h3>🏆 Top Scores</h3>
+  <ul id="leaderboard-list" style="list-style: none; padding: 0; max-height: 150px; overflow-y: auto; text-align: left;"></ul>
+  <button id="restart-btn">Restart</button>
+  <button id="menu-btn-game-over">Main Menu</button>
+</div>
     <div id="pause-menu" style="display: none;">
       <h1>Paused</h1>
       <button id="resume-btn">Resume</button>
+      <button id="rules-btn-pause">📖 How to Play</button>
       <button id="menu-btn-pause">Main Menu</button>
       <div class="audio-buttons">
         <button id="toggle-music-btn-pause">🎵 Music: On</button>
@@ -48,7 +126,7 @@
     </div>
   </div>
 
-  <script type="module" src="script.js"></script>
+  <script type="module" src="js/main.js"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
      window.Telegram.WebApp.expand();
