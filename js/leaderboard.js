@@ -62,7 +62,7 @@ export async function submitScore(username, score, playtime) {
       .from('leaderboard')
       .select('score')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (fetchError && fetchError.code !== 'PGRST116') {
       console.error('Fetch error:', fetchError);
@@ -159,4 +159,42 @@ export async function getFullLeaderboard() {
     console.error('Full leaderboard fetch error:', err);
     return [];
   }
+}
+
+
+
+// ============ DELETE USER DATA (GDPR) ============
+
+export async function deleteByDeviceId() {
+  try {
+    const userId = getUserId();
+
+    const { data, error } = await supabase
+      .from('leaderboard')
+      .delete()
+      .eq('user_id', userId)
+      .select();
+
+    if (error) throw error;
+
+    // Очищаем локальные данные
+    localStorage.removeItem('chicken_strike_device_id');
+    localStorage.removeItem('highScore');
+    localStorage.removeItem('gdpr_consent');
+
+    return { success: true, count: data?.length || 0 };
+  } catch (err) {
+    console.error('Delete by device error:', err);
+    return { success: false, count: 0 };
+  }
+}
+
+// ============ GDPR CONSENT ============
+
+export function hasConsent() {
+  return localStorage.getItem('gdpr_consent') === 'true';
+}
+
+export function setConsent(value) {
+  localStorage.setItem('gdpr_consent', value ? 'true' : 'false');
 }

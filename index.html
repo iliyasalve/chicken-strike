@@ -53,6 +53,34 @@
     <button id="toggle-music-btn">🎵 Music: On</button>
     <button id="toggle-sfx-btn">🔊 SFX: On</button>
   </div>
+  <button id="delete-data-btn">🗑️ Delete My Data</button>
+  <button id="privacy-btn">📄 Privacy Policy</button>
+</div>
+
+
+<!-- DELETE DATA MODAL -->
+<div id="delete-modal" style="display: none;">
+  <div id="delete-modal-content">
+    <h2>🗑️ Delete My Data</h2>
+
+    <div class="delete-method">
+      <h3>🔧 This device</h3>
+      <p>Delete all data linked to this device/browser.</p>
+      <button id="delete-by-device-btn">Delete my data</button>
+    </div>
+
+    <div id="delete-result" style="display: none;"></div>
+
+    <div class="delete-fallback">
+      <p>
+        Playing from a different device? Contact us at
+        <strong><a href="mailto:contact@iliyaglazunov.com">contact@iliyaglazunov.com</a></strong>
+        with your nickname and we'll delete your data within 30 days.
+      </p>
+    </div>
+
+    <button id="delete-modal-close-btn">Close</button>
+  </div>
 </div>
 
 <!-- LEADERBOARD MODAL -->
@@ -179,7 +207,77 @@
         <button id="toggle-music-btn-pause">🎵 Music: On</button>
         <button id="toggle-sfx-btn-pause">🔊 SFX: On</button>
       </div>
+      <button id="privacy-btn-pause">📄 Privacy Policy</button>
     </div>
+  
+  
+  
+  
+  <!-- GDPR CONSENT -->
+<div id="gdpr-banner" style="display: none;">
+  <div id="gdpr-content">
+    <p>
+      🍪 To save your score on the leaderboard, we store your 
+      nickname, score, play time, and a device identifier. 
+      No personal data is shared with third parties.
+    </p>
+    <div id="gdpr-buttons">
+      <button id="gdpr-accept">✅ I agree</button>
+      <button id="gdpr-decline">❌ No thanks</button>
+    </div>
+    <a id="gdpr-privacy-link" href="#" onclick="document.getElementById('privacy-modal').style.display='flex'; return false;">
+      📄 Privacy Policy
+    </a>
+  </div>
+</div>
+
+<!-- PRIVACY POLICY MODAL -->
+<div id="privacy-modal" style="display: none;">
+  <div id="privacy-content">
+    <h2>📄 Privacy Policy</h2>
+    <div class="privacy-text">
+      <h3>What we collect</h3>
+      <p>When you save your score, we store:</p>
+      <ul>
+        <li><strong>Nickname</strong> — the name you enter</li>
+        <li><strong>Score & play time</strong> — your game results</li>
+        <li><strong>Device ID</strong> — a random identifier stored on your device 
+          (or your Telegram ID if playing via Telegram)</li>
+        <li><strong>Timestamp</strong> — when the score was saved</li>
+      </ul>
+
+      <h3>Why we collect it</h3>
+      <p>Solely to display the leaderboard. Nothing else.</p>
+
+      <h3>Third parties</h3>
+      <p>Your data is stored on <a href="https://supabase.com/privacy" target="_blank">Supabase</a> 
+        (EU region, Frankfurt/Paris). We do not sell or share your data.</p>
+
+      <h3>Your rights (GDPR)</h3>
+      <p>You have the right to:</p>
+      <ul>
+        <li>🔍 <strong>Access</strong> — see what data we have about you</li>
+        <li>🗑️ <strong>Delete</strong> — request deletion of your data</li>
+        <li>❌ <strong>Refuse</strong> — play without saving scores</li>
+      </ul>
+
+      <h3>How to delete your data</h3>
+      <p>Press the "🗑️ Delete My Data" button in the main menu, 
+        or contact us at: <strong><a href="mailto:contact@iliyaglazunov.com">contact@iliyaglazunov.com</a></strong></p>
+
+      <h3>Cookies & Local Storage</h3>
+      <p>We use localStorage to store your device ID and local high score. 
+        No tracking cookies are used.</p>
+    </div>
+    <button id="privacy-close-btn">Close</button>
+  </div>
+</div>
+  
+  
+  
+  
+  
+  
   </div>
 
   <script type="module" src="js/main.js"></script>

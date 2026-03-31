@@ -15,7 +15,7 @@ import { handleCollisions } from './collision.js';
 import {
   submitScore, getLeaderboard, getFullLeaderboard,
   getLeaderboardLimit, formatDate, formatPlaytime,
-  isUsernameTaken, getUserId
+  deleteByDeviceId, hasConsent, setConsent, isUsernameTaken, getUserId
 } from './leaderboard.js';
 import { soundState, gameOverSound, victorySound } from '../js/music.js';
 
@@ -193,6 +193,8 @@ document.getElementById('resume-btn').addEventListener('click', resumeGame);
 
 const rulesModal = document.getElementById('rules-modal');
 const rulesCloseBtn = document.getElementById('rules-close-btn');
+const privacyBtn = document.getElementById('privacy-btn');
+const privacyBtnPause = document.getElementById('privacy-btn-pause');
 
 document.getElementById('rules-btn').addEventListener('click', () => {
   rulesModal.style.display = 'flex';
@@ -200,6 +202,14 @@ document.getElementById('rules-btn').addEventListener('click', () => {
 
 document.getElementById('rules-btn-pause').addEventListener('click', () => {
   rulesModal.style.display = 'flex';
+});
+
+privacyBtn.addEventListener('click', () => {
+  privacyModal.style.display = 'flex';
+});
+
+privacyBtnPause.addEventListener('click', () => {
+  privacyModal.style.display = 'flex';
 });
 
 rulesCloseBtn.addEventListener('click', () => {
@@ -244,6 +254,10 @@ window.addEventListener('keydown', (e) => {
       rulesModal.style.display = 'none';
     } else if (leaderboardModal.style.display === 'flex') {
       leaderboardModal.style.display = 'none';
+    } else if (deleteModal.style.display === 'flex') {
+      deleteModal.style.display = 'none';
+    } else if (privacyModal.style.display === 'flex') {
+      privacyModal.style.display = 'none';
     }
   }
 });
@@ -279,13 +293,43 @@ async function loadModalLeaderboard() {
 const submitBtn = document.getElementById('submit-leaderboard-btn');
 const usernameInput = document.getElementById('leaderboard-username');
 
-submitBtn?.addEventListener('click', async () => {
-  let username;
+// Если Telegram — заполняем ник и блокируем поле
+if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+  const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+  // Берём first_name, если нет — username (@nickname), если нет — оставляем поле открытым
+  const tgName = tgUser.first_name || tgUser.username || '';
 
-  if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-    username = window.Telegram.WebApp.initDataUnsafe.user.first_name || 'Anonymous';
-  } else {
-    username = usernameInput?.value.trim() || 'Anonymous';
+  if (usernameInput && tgName) {
+    // Имя найдено — заполняем и блокируем
+    usernameInput.value = tgName;
+    usernameInput.readOnly = true;
+    usernameInput.style.opacity = '0.7';
+    usernameInput.style.cursor = 'default';
+  } else if (usernameInput) {
+    // Имени нет — оставляем поле активным
+    usernameInput.placeholder = 'Enter your nickname';
+  }
+}
+
+submitBtn?.addEventListener('click', async () => {
+  
+  // ✅ Проверяем GDPR согласие
+  if (!hasConsent()) {
+    showGdprIfNeeded();
+    return;
+  }
+  
+   const username = usernameInput?.value.trim();
+
+  // Не даём сохранить без ника
+  if (!username) {
+    usernameInput.style.borderColor = '#ff4444';
+    usernameInput.placeholder = '⚠️ Enter a nickname!';
+    setTimeout(() => {
+      usernameInput.style.borderColor = '#c2b280';
+      usernameInput.placeholder = 'Enter your nickname';
+    }, 2000);
+    return;
   }
 
   // ✅ Проверяем доступность ника
@@ -322,6 +366,99 @@ submitBtn?.addEventListener('click', async () => {
     submitBtn.textContent = '💾 Save';
   }, 2000);
 });
+
+
+// ============ GDPR ============
+
+const gdprBanner = document.getElementById('gdpr-banner');
+const gdprAccept = document.getElementById('gdpr-accept');
+const gdprDecline = document.getElementById('gdpr-decline');
+const privacyModal = document.getElementById('privacy-modal');
+const privacyCloseBtn = document.getElementById('privacy-close-btn');
+const deleteDataBtn = document.getElementById('delete-data-btn');
+
+// Показываем GDPR баннер перед первым сохранением
+function showGdprIfNeeded() {
+  if (!hasConsent()) {
+    gdprBanner.style.display = 'block';
+    return false; // согласия нет
+  }
+  return true; // согласие есть
+}
+
+gdprAccept.addEventListener('click', () => {
+  setConsent(true);
+  gdprBanner.style.display = 'none';
+});
+
+gdprDecline.addEventListener('click', () => {
+  setConsent(false);
+  gdprBanner.style.display = 'none';
+});
+
+privacyCloseBtn.addEventListener('click', () => {
+  privacyModal.style.display = 'none';
+});
+
+privacyModal.addEventListener('click', (e) => {
+  if (e.target === privacyModal) privacyModal.style.display = 'none';
+});
+
+// ===== DELETE DATA =====
+
+// ============ DELETE DATA MODAL ============
+
+const deleteModal = document.getElementById('delete-modal');
+const deleteModalCloseBtn = document.getElementById('delete-modal-close-btn');
+const deleteByDeviceBtn = document.getElementById('delete-by-device-btn');
+const deleteResult = document.getElementById('delete-result');
+
+deleteDataBtn.addEventListener('click', () => {
+  deleteResult.style.display = 'none';
+  deleteModal.style.display = 'flex';
+});
+
+deleteModalCloseBtn.addEventListener('click', () => {
+  deleteModal.style.display = 'none';
+});
+
+deleteModal.addEventListener('click', (e) => {
+  if (e.target === deleteModal) deleteModal.style.display = 'none';
+});
+
+function showDeleteResult(message, type) {
+  deleteResult.textContent = message;
+  deleteResult.className = type;
+  deleteResult.style.display = 'block';
+}
+
+deleteByDeviceBtn.addEventListener('click', async () => {
+  const confirmed = confirm(
+    'This will permanently delete all your scores linked to this device. Continue?'
+  );
+  if (!confirmed) return;
+
+  deleteByDeviceBtn.disabled = true;
+  deleteByDeviceBtn.textContent = '⏳ Deleting...';
+
+  const result = await deleteByDeviceId();
+
+  if (result.success && result.count > 0) {
+    showDeleteResult(`✅ Deleted ${result.count} record(s). Local data cleared.`, 'success');
+    gameState.highScore = 0;
+    updateUI();
+  } else if (result.success && result.count === 0) {
+    showDeleteResult('⚠️ No records found for this device.', 'warning');
+  } else {
+    showDeleteResult('❌ Something went wrong. Please contact us by email.', 'error');
+  }
+
+  setTimeout(() => {
+    deleteByDeviceBtn.disabled = false;
+    deleteByDeviceBtn.textContent = 'Delete my data';
+  }, 2000);
+});
+
 
 // ============ INIT ============
 
