@@ -12,13 +12,16 @@ import {
   spawnEnemy, spawnCorn, spawnWheat
 } from './entities.js';
 import { handleCollisions } from './collision.js';
-import { submitScore, getLeaderboard } from './leaderboard.js';
+import {
+  submitScore, getLeaderboard, getFullLeaderboard,
+  getLeaderboardLimit, formatDate, formatPlaytime,
+  isUsernameTaken, getUserId
+} from './leaderboard.js';
 import { soundState, gameOverSound, victorySound } from '../js/music.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// ✅ ИСПРАВЛЕНИЕ: отслеживаем ID анимации
 let animationFrameId = null;
 
 // ============ STOP LOOP ============
@@ -35,6 +38,7 @@ function stopLoop() {
 function gameLoop(timestamp) {
   if (gameState.gameOver) {
     showGameOver(gameState.gameOverReason || 'Game Over!');
+    showGameOverStats();
 
     if (gameState.isVictory) {
       if (!soundState.victorySoundPlayed && !soundState.sfxMuted) {
@@ -48,7 +52,8 @@ function gameLoop(timestamp) {
       }
     }
 
-    animationFrameId = null; // Цикл мёртв
+    loadFullLeaderboard();
+    animationFrameId = null;
     return;
   }
 
@@ -59,7 +64,6 @@ function gameLoop(timestamp) {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Update
   updateChicken(canvas);
   updateEggs();
   updateEnemies(canvas);
@@ -67,14 +71,12 @@ function gameLoop(timestamp) {
   updateItems(canvas);
   handleCollisions();
 
-  // Draw
   drawChicken(ctx);
   drawEggs(ctx);
   drawEnemies(ctx);
   drawBoss(ctx);
   drawItems(ctx);
 
-  // Spawn
   if (timestamp - gameState.lastSpawnTime > CONFIG.SPAWN.baseInterval) {
     spawnEnemy(canvas);
     gameState.lastSpawnTime = timestamp;
@@ -97,10 +99,51 @@ function gameLoop(timestamp) {
   animationFrameId = requestAnimationFrame(gameLoop);
 }
 
+// ============ GAME OVER STATS ============
+
+function showGameOverStats() {
+  const scoreEl = document.getElementById('game-over-score');
+  const timeEl = document.getElementById('game-over-time');
+  if (scoreEl) scoreEl.textContent = `Score: ${gameState.score}`;
+  if (timeEl) timeEl.textContent = `Time: ${formatPlaytime(gameState.playtime)}`;
+}
+
+// ============ LEADERBOARD RENDERING ============
+
+async function loadFullLeaderboard() {
+  // Game Over — всегда только топ 3
+  const data = await getLeaderboard(3);
+  const tbody = document.getElementById('leaderboard-list');
+  if (!tbody) return;
+
+  tbody.innerHTML = data.map((entry, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${entry.username}</td>
+      <td>${entry.score}</td>
+      <td>${formatPlaytime(entry.playtime)}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadMiniLeaderboard() {
+  const limit = getLeaderboardLimit();
+  const data = await getLeaderboard(limit);
+  const list = document.getElementById('mini-leaderboard-list');
+  if (!list) return;
+
+  list.innerHTML = data.map(entry => `
+    <li>
+      <span class="mini-lb-name">${entry.username}</span>
+      <span class="mini-lb-score">${entry.score}</span>
+    </li>
+  `).join('');
+}
+
 // ============ GAME CONTROL ============
 
 function startGame() {
-  stopLoop(); // ✅ Убиваем старый цикл если есть
+  stopLoop();
   resizeCanvas();
   resetGameState(canvas);
   soundState.gameOverSoundPlayed = false;
@@ -112,6 +155,7 @@ function startGame() {
   setGrassState('moving');
   updateUI();
   playMusic();
+  loadMiniLeaderboard(); // ✅ Загружаем мини-лидерборд при старте
   animationFrameId = requestAnimationFrame(gameLoop);
 }
 
@@ -121,7 +165,7 @@ function resetGame() {
 }
 
 function goToMenu() {
-  stopLoop(); // ✅ Убиваем цикл при выходе в меню
+  stopLoop();
   hideGameOver();
   hidePause();
   pauseMusic();
@@ -135,7 +179,6 @@ function resumeGame() {
   hidePause();
   setGrassState('moving');
   playMusic();
-  // ✅ НЕ запускаем новый цикл — он уже крутится
 }
 
 // ============ BUTTON LISTENERS ============
@@ -151,7 +194,6 @@ document.getElementById('resume-btn').addEventListener('click', resumeGame);
 const rulesModal = document.getElementById('rules-modal');
 const rulesCloseBtn = document.getElementById('rules-close-btn');
 
-// Обе кнопки открывают одно и то же окно правил
 document.getElementById('rules-btn').addEventListener('click', () => {
   rulesModal.style.display = 'flex';
 });
@@ -165,9 +207,7 @@ rulesCloseBtn.addEventListener('click', () => {
 });
 
 rulesModal.addEventListener('click', (e) => {
-  if (e.target === rulesModal) {
-    rulesModal.style.display = 'none';
-  }
+  if (e.target === rulesModal) rulesModal.style.display = 'none';
 });
 
 window.addEventListener('keydown', (e) => {
@@ -176,30 +216,120 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// ============ LEADERBOARD ============
+// ============ LEADERBOARD MODAL ============
+
+const leaderboardModal = document.getElementById('leaderboard-modal');
+const leaderboardCloseBtn = document.getElementById('leaderboard-close-btn');
+const leaderboardBtn = document.getElementById('leaderboard-btn');
+
+leaderboardBtn.addEventListener('click', async () => {
+  leaderboardModal.style.display = 'flex';
+  await loadModalLeaderboard();
+});
+
+leaderboardCloseBtn.addEventListener('click', () => {
+  leaderboardModal.style.display = 'none';
+});
+
+leaderboardModal.addEventListener('click', (e) => {
+  if (e.target === leaderboardModal) {
+    leaderboardModal.style.display = 'none';
+  }
+});
+
+// Добавь Escape для закрытия (обнови существующий обработчик)
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Escape') {
+    if (rulesModal.style.display === 'flex') {
+      rulesModal.style.display = 'none';
+    } else if (leaderboardModal.style.display === 'flex') {
+      leaderboardModal.style.display = 'none';
+    }
+  }
+});
+
+async function loadModalLeaderboard() {
+  const data = await getFullLeaderboard();
+  const tbody = document.getElementById('leaderboard-modal-list');
+  const emptyMsg = document.getElementById('leaderboard-modal-empty');
+  const tableWrapper = document.getElementById('leaderboard-modal-table-wrapper');
+
+  if (!data.length) {
+    emptyMsg.style.display = 'block';
+    tableWrapper.style.display = 'none';
+    return;
+  }
+
+  emptyMsg.style.display = 'none';
+  tableWrapper.style.display = 'block';
+
+  tbody.innerHTML = data.map((entry, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${entry.username}</td>
+      <td>${entry.score}</td>
+      <td>${formatPlaytime(entry.playtime)}</td>
+      <td>${formatDate(entry.created_at)}</td>
+    </tr>
+  `).join('');
+}
+
+// ============ LEADERBOARD SUBMIT ============
 
 const submitBtn = document.getElementById('submit-leaderboard-btn');
 const usernameInput = document.getElementById('leaderboard-username');
-const leaderboardList = document.getElementById('leaderboard-list');
 
 submitBtn?.addEventListener('click', async () => {
-  const username = usernameInput?.value.trim() || 'Anonymous';
-  await submitScore(username, gameState.score, gameState.playtime);
-  await loadLeaderboard();
-});
+  let username;
 
-async function loadLeaderboard() {
-  const data = await getLeaderboard(10);
-  if (leaderboardList) {
-    leaderboardList.innerHTML = data
-      .map((e, i) => `<li>#${i + 1} ${e.username} — ${e.score} pts (${e.playtime}s)</li>`)
-      .join('');
+  if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+    username = window.Telegram.WebApp.initDataUnsafe.user.first_name || 'Anonymous';
+  } else {
+    username = usernameInput?.value.trim() || 'Anonymous';
   }
-}
+
+  // ✅ Проверяем доступность ника
+  submitBtn.disabled = true;
+  submitBtn.textContent = '⏳...';
+
+  const taken = await isUsernameTaken(username, getUserId());
+
+  if (taken) {
+    submitBtn.textContent = '❌ Name taken';
+    usernameInput.style.borderColor = '#ff4444';
+
+    setTimeout(() => {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '💾 Save';
+      usernameInput.style.borderColor = '#c2b280';
+    }, 2000);
+    return;
+  }
+
+  const result = await submitScore(username, gameState.score, gameState.playtime);
+  await loadFullLeaderboard();
+
+  if (result?.updated) {
+    submitBtn.textContent = '✅ Saved!';
+  } else if (result?.updated === false) {
+    submitBtn.textContent = '📊 Not a record';
+  } else {
+    submitBtn.textContent = '❌ Error';
+  }
+
+  setTimeout(() => {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '💾 Save';
+  }, 2000);
+});
 
 // ============ INIT ============
 
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  loadMiniLeaderboard(); // ✅ Обновляем при смене размера
+});
+
 initHealthBar();
 setupInput();
 resizeCanvas();

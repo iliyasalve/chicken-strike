@@ -9,16 +9,35 @@ export function setupInput() {
   const shootBtn = document.getElementById('shoot-btn');
 
   window.addEventListener('keydown', e => {
-    if (e.code === 'ArrowLeft' || e.code === 'KeyA') gameState.chicken.dx = -gameState.chicken.speed;
-    else if (e.code === 'ArrowRight' || e.code === 'KeyD') gameState.chicken.dx = gameState.chicken.speed;
-    else if (e.code === 'Space') handleShoot();
-    else if (e.code === 'KeyP') handlePause();
-    else if (e.code === 'KeyH') CONFIG.DEBUG_HITBOXES = !CONFIG.DEBUG_HITBOXES;
-  });
+  // ✅ Если фокус на текстовом поле — не обрабатываем игровые клавиши
+  if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+    return;
+  }
 
-  window.addEventListener('keyup', e => {
-    if (['ArrowLeft','KeyA','ArrowRight','KeyD'].includes(e.code)) gameState.chicken.dx = 0;
-  });
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+    gameState.chicken.dx = -gameState.chicken.speed;
+  } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+    gameState.chicken.dx = gameState.chicken.speed;
+  } else if (e.code === 'Space') {
+    handleShoot();
+  } else if (e.code === 'KeyP') {
+    handlePause();
+  } else if (e.code === 'KeyH') {
+    CONFIG.DEBUG_HITBOXES = !CONFIG.DEBUG_HITBOXES;
+    console.log('Hitboxes:', CONFIG.DEBUG_HITBOXES ? 'ON' : 'OFF');
+  }
+});
+
+window.addEventListener('keyup', e => {
+  // ✅ Тоже игнорируем при вводе текста
+  if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+    return;
+  }
+
+  if (['ArrowLeft', 'KeyA', 'ArrowRight', 'KeyD'].includes(e.code)) {
+    gameState.chicken.dx = 0;
+  }
+});
 
   const addTouch = (btn, startFn, endFn) => {
     btn.addEventListener('touchstart', e => { e.preventDefault(); startFn(); });

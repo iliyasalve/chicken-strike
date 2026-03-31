@@ -2,13 +2,17 @@ body, html {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  width: 100%;
   height: 100%;
+  height: 100dvh; /* Safari fix */
   display: flex;
   justify-content: center;
   align-items: center;
   background-color: #faf8f0;
   font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
+
+/* ===== GAME CONTAINER ===== */
 
 #game-container {
   position: relative;
@@ -19,7 +23,6 @@ body, html {
   border-radius: 15px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
-
 
 /* ===== МОБИЛКИ: полный экран ===== */
 @media (max-width: 768px) {
@@ -35,19 +38,21 @@ body, html {
 @media (min-width: 769px) and (max-width: 1200px) {
   #game-container {
     max-width: 700px;
-    max-height: 900px;
+    max-height: 100%;
     border: 5px solid #c2b280;
   }
 }
 
-/* ===== ДЕСКТОП (MacBook и т.д.) ===== */
+/* ===== ДЕСКТОП ===== */
 @media (min-width: 1201px) {
   #game-container {
     max-width: 900px;
-    max-height: 95vh;
+    max-height: 100%;
     border: 5px solid #c2b280;
   }
 }
+
+/* ===== CANVAS ===== */
 
 #gameCanvas {
   display: block;
@@ -64,31 +69,28 @@ body, html {
   animation-iteration-count: infinite;
 }
 
-/* Трава не движется */
+/* ===== GRASS ANIMATION ===== */
+
 .grass-static {
   animation-name: none !important;
 }
 
-/* Трава движется с нормальной скоростью */
 .grass-moving {
   animation-name: grassScroll;
   animation-duration: 5s;
 }
 
-/* Трава движется быстрее */
 .grass-boost {
   animation-name: grassScroll;
   animation-duration: 2s;
 }
 
 @keyframes grassScroll {
-  from {
-    background-position: 0 0;
-  }
-  to {
-    background-position: 0 100px;
-  }
+  from { background-position: 0 0; }
+  to { background-position: 0 100px; }
 }
+
+/* ===== SCORE CONTAINER (справа сверху) ===== */
 
 #score-container {
   position: absolute;
@@ -99,7 +101,71 @@ body, html {
   font-weight: bold;
   z-index: 10;
   text-shadow: 1px 1px 2px #fff;
+  background: rgba(255, 250, 230, 0.85);
+  border: 2px solid #c2b280;
+  border-radius: 8px;
+  padding: 8px 12px;
 }
+
+#current-score {
+  font-size: 20px;
+}
+
+#high-score {
+  font-size: 16px;
+  opacity: 0.85;
+}
+
+/* ===== MINI LEADERBOARD (во время игры) ===== */
+
+#mini-leaderboard {
+  margin-top: 10px;
+  background: rgba(255, 250, 230, 0.85);
+  border: 2px solid #c2b280;
+  border-radius: 8px;
+  padding: 6px 10px;
+  max-width: 180px;
+}
+
+.mini-lb-title {
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: #5e3a00;
+}
+
+#mini-leaderboard-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 12px;
+  color: #5e3a00;
+}
+
+#mini-leaderboard-list li {
+  padding: 2px 0;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(194, 178, 128, 0.2);
+}
+
+#mini-leaderboard-list li:last-child {
+  border-bottom: none;
+}
+
+.mini-lb-name {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-lb-score {
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+/* ===== HEALTH CONTAINER (слева сверху) ===== */
 
 #health-container {
   position: absolute;
@@ -110,14 +176,13 @@ body, html {
   font-weight: bold;
   z-index: 10;
   text-shadow: 1px 1px 2px #fff;
+  background: rgba(255, 250, 230, 0.85);
+  border: 2px solid #c2b280;
+  border-radius: 8px;
+  padding: 8px 12px;
 }
 
-
-
-
-
-
-
+/* ===== UI BLOCKS ===== */
 
 .ui-block {
   margin-bottom: 8px;
@@ -130,7 +195,8 @@ body, html {
   color: #5e3a00;
 }
 
-/* HEALTH BAR */
+/* ===== HEALTH BAR ===== */
+
 #health-bar {
   display: flex;
   width: 120px;
@@ -147,7 +213,8 @@ body, html {
   transition: background-color 0.3s;
 }
 
-/* MISSED ENEMIES BAR */
+/* ===== MISSED ENEMIES BAR ===== */
+
 #missed-bar {
   display: flex;
   width: 120px;
@@ -160,11 +227,19 @@ body, html {
 
 #missed-bar div {
   flex: 1;
-  background-color: #ff9800;
+  background-color: #ddd;
   transition: background-color 0.3s;
 }
 
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  50% { transform: translateX(2px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
 
+/* ===== TOUCH CONTROLS ===== */
 
 #touch-controls {
   display: none;
@@ -193,8 +268,16 @@ body, html {
   transform: scale(1.1);
 }
 
+/* Показывать тач-кнопки только на мобилках */
+@media (hover: none) and (pointer: coarse) {
+  #touch-controls {
+    display: flex;
+  }
+}
+
+/* ===== MENUS (start, game over, pause) ===== */
+
 #start-menu,
-#game-over-screen,
 #pause-menu {
   position: absolute;
   top: 50%;
@@ -239,6 +322,8 @@ body, html {
   margin: 6px;
   transition: background-color 0.3s, transform 0.3s;
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  min-width: 220px;  
+  text-align: center;
 }
 
 #start-menu button:hover,
@@ -248,14 +333,160 @@ body, html {
   transform: scale(1.05);
 }
 
-/* Показывать сенсорные кнопки только на сенсорных устройствах */
-@media (hover: none) and (pointer: coarse) {
-  #touch-controls {
-    display: flex;
-  }
+/* ===== GAME OVER SCREEN ===== */
+
+#game-over-screen {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(255, 250, 230, 0.97);
+  padding: 20px 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  max-width: 420px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
+#game-over-score-summary {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #5e3a00;
+}
 
+/* ===== LEADERBOARD INPUT ===== */
+
+#leaderboard-input {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 15px;
+  width: 100%;
+  justify-content: center;
+}
+
+#leaderboard-username {
+  padding: 10px 12px;
+  border: 2px solid #c2b280;
+  border-radius: 8px;
+  font-size: 16px;
+  width: 60%;
+  background: #fffbe6;
+  color: #5e3a00;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+#leaderboard-username:focus {
+  border-color: #5e3a00;
+}
+
+#leaderboard-username::placeholder {
+  color: #c2b280;
+}
+
+#submit-leaderboard-btn {
+  min-width: auto !important;
+  padding: 10px 16px !important;
+  font-size: 16px !important;
+  margin: 0 !important;
+  white-space: nowrap;
+}
+
+/* ===== LEADERBOARD TABLE ===== */
+
+#leaderboard-section {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+#leaderboard-section h3 {
+  font-size: 18px;
+  color: #5e3a00;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+#leaderboard-table-wrapper {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 2px solid #c2b280;
+  border-radius: 8px;
+}
+
+#leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  color: #5e3a00;
+  text-align: center; /* ✅ всё по центру */
+}
+
+#leaderboard-table thead {
+  background: #ffe4b5;
+  position: sticky;
+  top: 0;
+}
+
+#leaderboard-table th {
+  padding: 8px 6px;
+  font-size: 13px;
+  font-weight: bold;
+  text-align: center; /* ✅ заголовки по центру */
+  border-bottom: 2px solid #c2b280;
+}
+
+#leaderboard-table td {
+  padding: 6px;
+  text-align: center; /* ✅ данные по центру */
+  border-bottom: 1px solid rgba(194, 178, 128, 0.3);
+}
+
+#leaderboard-table tbody tr:hover {
+  background: rgba(255, 228, 181, 0.3);
+}
+
+/* Медали для топ-3 */
+#leaderboard-table tbody tr:nth-child(1) td:first-child::before { content: '🥇 '; }
+#leaderboard-table tbody tr:nth-child(2) td:first-child::before { content: '🥈 '; }
+#leaderboard-table tbody tr:nth-child(3) td:first-child::before { content: '🥉 '; }
+
+/* ===== GAME OVER BUTTONS ===== */
+
+.game-over-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ===== SCROLLBARS ===== */
+
+#leaderboard-table-wrapper::-webkit-scrollbar,
+#game-over-screen::-webkit-scrollbar {
+  width: 6px;
+}
+
+#leaderboard-table-wrapper::-webkit-scrollbar-thumb,
+#game-over-screen::-webkit-scrollbar-thumb {
+  background: #c2b280;
+  border-radius: 3px;
+}
+
+#leaderboard-table-wrapper::-webkit-scrollbar-track,
+#game-over-screen::-webkit-scrollbar-track {
+  background: transparent;
+}
 
 /* ===== RULES MODAL ===== */
 
@@ -384,21 +615,269 @@ body, html {
   border-radius: 3px;
 }
 
-/* ===== Кнопка правил в меню ===== */
-#rules-btn {
-  background-color: transparent;
+/* ===== Кнопки правил (стиль dashed) ===== 
+
+#rules-btn,
+#rules-btn-pause {
+  background-color: transparent !important;
   color: #5e3a00;
-  border: 2px dashed #c2b280;
+  border: 2px dashed #c2b280 !important;
   padding: 10px 25px;
   font-size: 18px;
   cursor: pointer;
   border-radius: 8px;
   margin: 6px;
   transition: all 0.3s;
+  box-shadow: none !important;
 }
 
-#rules-btn:hover {
-  background-color: rgba(194, 178, 128, 0.2);
-  border-style: solid;
+#rules-btn:hover,
+#rules-btn-pause:hover {
+  background-color: rgba(194, 178, 128, 0.2) !important;
+  border-style: solid !important;
   transform: scale(1.05);
+}*/
+
+/* ===== DESKTOP: увеличенный UI ===== */
+
+@media (min-width: 1201px) {
+  #score-container {
+    font-size: 22px;
+    top: 15px;
+    right: 15px;
+  }
+
+  #current-score {
+    font-size: 24px;
+  }
+
+  #high-score {
+    font-size: 18px;
+  }
+
+  .ui-label {
+    font-size: 16px;
+  }
+
+  #health-bar,
+  #missed-bar {
+    width: 160px;
+    height: 22px;
+  }
+
+#mini-leaderboard {
+  margin-top: 10px;
+  background: rgba(255, 250, 230, 0.85);
+  border: 2px solid #c2b280;
+  border-radius: 8px;
+  padding: 6px 10px;
+  max-width: 180px;
+}
+
+  .mini-lb-title {
+    font-size: 14px;
+  }
+
+  #mini-leaderboard-list {
+    font-size: 13px;
+  }
+
+  #touch-controls {
+    display: none !important;
+  }
+}
+
+/* ===== МОБИЛКИ: компактный UI ===== */
+
+@media (max-width: 768px) {
+  #mini-leaderboard {
+    max-width: 150px;
+  }
+
+  .mini-lb-title {
+    font-size: 11px;
+  }
+
+  #mini-leaderboard-list {
+    font-size: 11px;
+  }
+
+  #game-over-screen {
+    padding: 15px;
+    max-height: 80vh;
+    width: 92%;
+  }
+
+  #game-over-screen h1 {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+
+  #game-over-score-summary {
+    font-size: 16px;
+    gap: 12px;
+  }
+
+  #leaderboard-table {
+    font-size: 12px;
+  }
+
+  #leaderboard-table th,
+  #leaderboard-table td {
+    padding: 5px 4px;
+  }
+
+  #leaderboard-table-wrapper {
+    max-height: 150px;
+  }
+
+  #start-menu button,
+  #game-over-screen button,
+  #pause-menu button {
+    padding: 12px 24px;
+    font-size: 18px;
+  }
+}
+
+
+/* ===== LEADERBOARD MODAL ===== */
+
+#leaderboard-modal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#leaderboard-modal-content {
+  background-color: #fffbe6;
+  border: 3px solid #c2b280;
+  border-radius: 15px;
+  padding: 25px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  color: #5e3a00;
+}
+
+#leaderboard-modal-content h2 {
+  text-align: center;
+  font-size: 26px;
+  margin-bottom: 15px;
+  color: #5e3a00;
+  flex-shrink: 0;
+}
+
+#leaderboard-modal-table-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  border: 2px solid #c2b280;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+#leaderboard-modal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  color: #5e3a00;
+  text-align: center;
+}
+
+#leaderboard-modal-table thead {
+  background: #ffe4b5;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+#leaderboard-modal-table th {
+  padding: 10px 6px;
+  font-size: 13px;
+  font-weight: bold;
+  text-align: center;
+  border-bottom: 2px solid #c2b280;
+}
+
+#leaderboard-modal-table td {
+  padding: 8px 6px;
+  text-align: center;
+  border-bottom: 1px solid rgba(194, 178, 128, 0.3);
+}
+
+#leaderboard-modal-table tbody tr:hover {
+  background: rgba(255, 228, 181, 0.3);
+}
+
+/* Медали для топ-3 */
+#leaderboard-modal-table tbody tr:nth-child(1) td:first-child::before { content: '🥇 '; }
+#leaderboard-modal-table tbody tr:nth-child(2) td:first-child::before { content: '🥈 '; }
+#leaderboard-modal-table tbody tr:nth-child(3) td:first-child::before { content: '🥉 '; }
+
+#leaderboard-modal-empty {
+  text-align: center;
+  font-size: 16px;
+  color: #c2b280;
+  padding: 20px;
+}
+
+#leaderboard-close-btn {
+  display: block;
+  margin: 0 auto;
+  background-color: #ffe4b5;
+  color: #5e3a00;
+  border: 2px solid #5e3a00;
+  padding: 12px 30px;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 8px;
+  min-width: 200px;
+  transition: background-color 0.3s, transform 0.3s;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+#leaderboard-close-btn:hover {
+  background-color: #ffdead;
+  transform: scale(1.05);
+}
+
+/* Скроллбар */
+#leaderboard-modal-table-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+#leaderboard-modal-table-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#leaderboard-modal-table-wrapper::-webkit-scrollbar-thumb {
+  background: #c2b280;
+  border-radius: 3px;
+}
+
+/* ===== МОБИЛКИ ===== */
+@media (max-width: 768px) {
+  #leaderboard-modal-content {
+    padding: 15px;
+    max-height: 85%;
+  }
+
+  #leaderboard-modal-table {
+    font-size: 12px;
+  }
+
+  #leaderboard-modal-table th,
+  #leaderboard-modal-table td {
+    padding: 6px 4px;
+  }
 }

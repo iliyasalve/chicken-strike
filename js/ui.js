@@ -30,36 +30,37 @@ export function setGrassState(state) {
 // ============ UI UPDATES ============
 
 export function updateUI() {
-    el.score.textContent = `Score: ${gameState.score}`;
-    if (gameState.score > gameState.highScore) {
-        gameState.highScore = gameState.score;
-        localStorage.setItem('highScore', gameState.highScore);
-    }
-    el.highScore.textContent = `High Score: ${gameState.highScore}`;
-    el.eggDamage.textContent = `🥚 Egg Damage: ${gameState.eggDamage}`;
-    // Обновление полоски здоровья
-    el.healthBar.querySelectorAll('div').forEach((seg, i) => {
-    seg.style.backgroundColor =
-        i < gameState.health ? '#4caf50' : '#ff4444';
-    });
+  el.score.textContent = `Score: ${gameState.score}`;
+  if (gameState.score > gameState.highScore) {
+    gameState.highScore = gameState.score;
+    localStorage.setItem('highScore', gameState.highScore);
+  }
+  // ✅ Переименовано
+  el.highScore.textContent = `🏆 Best: ${gameState.highScore}`;
+  el.eggDamage.textContent = `🥚 Egg Damage: ${gameState.eggDamage}`;
 
-    // Обновление полоски пропущенных врагов
-    el.missedBar.querySelectorAll('div').forEach((seg, i) => {
+  // Health bar
+  el.healthBar.querySelectorAll('div').forEach((seg, i) => {
+    seg.style.backgroundColor = i < gameState.health ? '#4caf50' : '#ff4444';
+  });
+
+  // Missed bar
+  el.missedBar.querySelectorAll('div').forEach((seg, i) => {
     if (i < gameState.missedEnemies) {
-        // Чем ближе к лимиту — тем краснее
-        const dangerRatio = gameState.missedEnemies / CONFIG.GAME.maxMissedEnemies;
-
-        if (dangerRatio > 0.7) {
-        seg.style.backgroundColor = '#ff0000';
-        } else if (dangerRatio > 0.4) {
-        seg.style.backgroundColor = '#ff9800';
-        } else {
-        seg.style.backgroundColor = '#ffc107';
-        }
+      const dangerRatio = gameState.missedEnemies / CONFIG.GAME.maxMissedEnemies;
+      if (dangerRatio > 0.7) seg.style.backgroundColor = '#ff0000';
+      else if (dangerRatio > 0.4) seg.style.backgroundColor = '#ff9800';
+      else seg.style.backgroundColor = '#ffc107';
     } else {
-        seg.style.backgroundColor = '#ddd';
+      seg.style.backgroundColor = '#ddd';
     }
-    });
+  });
+
+  if (gameState.missedEnemies >= CONFIG.GAME.maxMissedEnemies - 2) {
+    el.missedBar.style.animation = 'shake 0.4s infinite';
+  } else {
+    el.missedBar.style.animation = 'none';
+  }
 }
 
 // ============ GAME OVER SCREEN ============

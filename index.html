@@ -10,9 +10,14 @@
 <body>
   <div id="game-container">
     <canvas id="gameCanvas"></canvas>
+    <!-- SCORE CONTAINER (справа сверху) -->
     <div id="score-container">
-      <span id="current-score">Score: 0</span> <br/>
-      <span id="high-score">High Score: 0</span>
+      <span id="current-score">Score: 0</span><br/>
+      <span id="high-score">🏆 Best: 0</span>
+      <div id="mini-leaderboard">
+        <div class="mini-lb-title">👑 Top Players</div>
+        <ol id="mini-leaderboard-list"></ol>
+      </div>
     </div>
 
     <div id="health-container">
@@ -43,9 +48,33 @@
   <h1>🐔 Chicken Strike</h1>
   <button id="start-btn">Start Game</button>
   <button id="rules-btn">📖 How to Play</button>
+  <button id="leaderboard-btn">🏆 Leaderboard</button>
   <div class="audio-buttons">
     <button id="toggle-music-btn">🎵 Music: On</button>
     <button id="toggle-sfx-btn">🔊 SFX: On</button>
+  </div>
+</div>
+
+<!-- LEADERBOARD MODAL -->
+<div id="leaderboard-modal" style="display: none;">
+  <div id="leaderboard-modal-content">
+    <h2>🏆 Leaderboard</h2>
+    <div id="leaderboard-modal-table-wrapper">
+      <table id="leaderboard-modal-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th>Score</th>
+            <th>Time</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-modal-list"></tbody>
+      </table>
+    </div>
+    <p id="leaderboard-modal-empty" style="display: none;">No scores yet. Be the first! 🐔</p>
+    <button id="leaderboard-close-btn">Close</button>
   </div>
 </div>
 
@@ -102,18 +131,45 @@
   </div>
 </div>
 
-   <div id="game-over-screen" style="display: none;">
+<!-- GAME OVER SCREEN -->
+<div id="game-over-screen" style="display: none;">
   <h1>Game Over</h1>
   <p id="game-over-reason"></p>
-  <div style="margin: 15px 0; width: 100%;">
-    <input id="leaderboard-username" type="text" placeholder="Your nickname" style="padding: 8px; width: 70%; margin-right: 5px;">
-    <button id="submit-leaderboard-btn" style="padding: 8px;">Save Score</button>
+
+  <div id="game-over-score-summary">
+    <span id="game-over-score">Score: 0</span>
+    <span id="game-over-time">Time: 0s</span>
   </div>
-  <h3>🏆 Top Scores</h3>
-  <ul id="leaderboard-list" style="list-style: none; padding: 0; max-height: 150px; overflow-y: auto; text-align: left;"></ul>
-  <button id="restart-btn">Restart</button>
-  <button id="menu-btn-game-over">Main Menu</button>
+
+  <div id="leaderboard-input">
+    <input id="leaderboard-username" type="text"
+           placeholder="Your nickname" maxlength="20">
+    <button id="submit-leaderboard-btn">💾 Save</button>
+  </div>
+
+  <div id="leaderboard-section">
+    <h3>🏆 Leaderboard</h3>
+    <div id="leaderboard-table-wrapper">
+      <table id="leaderboard-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th>Score</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-list"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="game-over-buttons">
+    <button id="restart-btn">🔄 Restart</button>
+    <button id="menu-btn-game-over">🏠 Menu</button>
+  </div>
 </div>
+
     <div id="pause-menu" style="display: none;">
       <h1>Paused</h1>
       <button id="resume-btn">Resume</button>

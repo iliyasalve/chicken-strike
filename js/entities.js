@@ -88,6 +88,13 @@ export function updateChicken(canvas) {
     gameState.speedBoostActive = false;
     gameState.chicken.speed = CONFIG.CHICKEN.speed;
   }
+
+  // ✅ ИСПРАВЛЕНИЕ: пересчитываем dx на основе текущей скорости
+  // Если игрок двигается — обновляем dx с актуальной скоростью
+  if (gameState.chicken.dx !== 0) {
+    gameState.chicken.dx = Math.sign(gameState.chicken.dx) * gameState.chicken.speed;
+  }
+
   gameState.chicken.x += gameState.chicken.dx;
   gameState.chicken.x = Math.max(0, Math.min(canvas.width - gameState.chicken.width, gameState.chicken.x));
 }
