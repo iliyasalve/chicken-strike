@@ -1,3 +1,7 @@
+/* ========================================= */
+/* GLOBAL                                    */
+/* ========================================= */
+
 body, html {
   margin: 0;
   padding: 0;
@@ -12,7 +16,9 @@ body, html {
   font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 
-/* ===== GAME CONTAINER ===== */
+/* ========================================= */
+/* GAME CONTAINER                            */
+/* ========================================= */
 
 #game-container {
   position: relative;
@@ -24,35 +30,9 @@ body, html {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-/* ===== МОБИЛКИ: полный экран ===== */
-@media (max-width: 768px) {
-  #game-container {
-    max-width: 100%;
-    max-height: 100%;
-    border: none;
-    border-radius: 0;
-  }
-}
-
-/* ===== ПЛАНШЕТЫ ===== */
-@media (min-width: 769px) and (max-width: 1200px) {
-  #game-container {
-    max-width: 700px;
-    max-height: 100%;
-    border: 5px solid #c2b280;
-  }
-}
-
-/* ===== ДЕСКТОП ===== */
-@media (min-width: 1201px) {
-  #game-container {
-    max-width: 900px;
-    max-height: 100%;
-    border: 5px solid #c2b280;
-  }
-}
-
-/* ===== CANVAS ===== */
+/* ========================================= */
+/* CANVAS                                    */
+/* ========================================= */
 
 #gameCanvas {
   display: block;
@@ -69,7 +49,9 @@ body, html {
   animation-iteration-count: infinite;
 }
 
-/* ===== GRASS ANIMATION ===== */
+/* ========================================= */
+/* GRASS ANIMATION                           */
+/* ========================================= */
 
 .grass-static {
   animation-name: none !important;
@@ -90,7 +72,9 @@ body, html {
   to { background-position: 0 100px; }
 }
 
-/* ===== SCORE CONTAINER (справа сверху) ===== */
+/* ========================================= */
+/* HUD — SCORE CONTAINER (top right)         */
+/* ========================================= */
 
 #score-container {
   position: absolute;
@@ -116,7 +100,9 @@ body, html {
   opacity: 0.85;
 }
 
-/* ===== MINI LEADERBOARD (во время игры) ===== */
+/* ========================================= */
+/* HUD — MINI LEADERBOARD (in-game)          */
+/* ========================================= */
 
 #mini-leaderboard {
   margin-top: 10px;
@@ -165,7 +151,9 @@ body, html {
   margin-left: 8px;
 }
 
-/* ===== HEALTH CONTAINER (слева сверху) ===== */
+/* ========================================= */
+/* HUD — HEALTH CONTAINER (top left)         */
+/* ========================================= */
 
 #health-container {
   position: absolute;
@@ -182,10 +170,16 @@ body, html {
   padding: 8px 12px;
 }
 
-/* ===== UI BLOCKS ===== */
+/* ========================================= */
+/* HUD — UI BLOCKS & LABELS                  */
+/* ========================================= */
 
 .ui-block {
   margin-bottom: 8px;
+}
+
+.ui-block:last-child {
+  margin-bottom: 0;
 }
 
 .ui-label {
@@ -195,7 +189,9 @@ body, html {
   color: #5e3a00;
 }
 
-/* ===== HEALTH BAR ===== */
+/* ========================================= */
+/* HUD — HEALTH BAR                          */
+/* ========================================= */
 
 #health-bar {
   display: flex;
@@ -213,7 +209,9 @@ body, html {
   transition: background-color 0.3s;
 }
 
-/* ===== MISSED ENEMIES BAR ===== */
+/* ========================================= */
+/* HUD — MISSED ENEMIES BAR                  */
+/* ========================================= */
 
 #missed-bar {
   display: flex;
@@ -232,14 +230,16 @@ body, html {
 }
 
 @keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-2px); }
-  50% { transform: translateX(2px); }
-  75% { transform: translateX(-2px); }
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(-2px); }
+  50%  { transform: translateX(2px); }
+  75%  { transform: translateX(-2px); }
   100% { transform: translateX(0); }
 }
 
-/* ===== TOUCH CONTROLS ===== */
+/* ========================================= */
+/* TOUCH CONTROLS                            */
+/* ========================================= */
 
 #touch-controls {
   display: none;
@@ -268,14 +268,15 @@ body, html {
   transform: scale(1.1);
 }
 
-/* Показывать тач-кнопки только на мобилках */
 @media (hover: none) and (pointer: coarse) {
   #touch-controls {
     display: flex;
   }
 }
 
-/* ===== MENUS (start, game over, pause) ===== */
+/* ========================================= */
+/* MENUS — SHARED (start, pause)             */
+/* ========================================= */
 
 #start-menu,
 #pause-menu {
@@ -309,20 +310,25 @@ body, html {
   color: #5e3a00;
 }
 
+/* ========================================= */
+/* MENUS — SHARED BUTTON STYLE               */
+/* ========================================= */
+
 #start-menu button,
 #game-over-screen button,
 #pause-menu button {
   background-color: #ffe4b5;
   color: #5e3a00;
   border: 2px solid #5e3a00;
-  padding: 15px 30px;
-  font-size: 22px;
+  padding: 12px 20px;
+  font-size: 18px;
   cursor: pointer;
   border-radius: 8px;
   margin: 6px;
   transition: background-color 0.3s, transform 0.3s;
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-  min-width: 220px;  
+  width: 220px;
+  box-sizing: border-box;
   text-align: center;
 }
 
@@ -333,7 +339,9 @@ body, html {
   transform: scale(1.05);
 }
 
-/* ===== GAME OVER SCREEN ===== */
+/* ========================================= */
+/* GAME OVER SCREEN                          */
+/* ========================================= */
 
 #game-over-screen {
   position: absolute;
@@ -365,7 +373,16 @@ body, html {
   color: #5e3a00;
 }
 
-/* ===== LEADERBOARD INPUT ===== */
+.game-over-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ========================================= */
+/* GAME OVER — LEADERBOARD INPUT             */
+/* ========================================= */
 
 #leaderboard-input {
   display: flex;
@@ -397,13 +414,16 @@ body, html {
 
 #submit-leaderboard-btn {
   min-width: auto !important;
+  width: auto !important;
   padding: 10px 16px !important;
   font-size: 16px !important;
   margin: 0 !important;
   white-space: nowrap;
 }
 
-/* ===== LEADERBOARD TABLE ===== */
+/* ========================================= */
+/* GAME OVER — LEADERBOARD TABLE             */
+/* ========================================= */
 
 #leaderboard-section {
   width: 100%;
@@ -429,7 +449,7 @@ body, html {
   border-collapse: collapse;
   font-size: 14px;
   color: #5e3a00;
-  text-align: center; /* ✅ всё по центру */
+  text-align: center;
 }
 
 #leaderboard-table thead {
@@ -442,13 +462,13 @@ body, html {
   padding: 8px 6px;
   font-size: 13px;
   font-weight: bold;
-  text-align: center; /* ✅ заголовки по центру */
+  text-align: center;
   border-bottom: 2px solid #c2b280;
 }
 
 #leaderboard-table td {
   padding: 6px;
-  text-align: center; /* ✅ данные по центру */
+  text-align: center;
   border-bottom: 1px solid rgba(194, 178, 128, 0.3);
 }
 
@@ -456,41 +476,20 @@ body, html {
   background: rgba(255, 228, 181, 0.3);
 }
 
-/* Медали для топ-3 */
 #leaderboard-table tbody tr:nth-child(1) td:first-child::before { content: '🥇 '; }
 #leaderboard-table tbody tr:nth-child(2) td:first-child::before { content: '🥈 '; }
 #leaderboard-table tbody tr:nth-child(3) td:first-child::before { content: '🥉 '; }
 
-/* ===== GAME OVER BUTTONS ===== */
+/* ========================================= */
+/* MODAL — SHARED STYLES                     */
+/* ========================================= */
 
-.game-over-buttons {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-/* ===== SCROLLBARS ===== */
-
-#leaderboard-table-wrapper::-webkit-scrollbar,
-#game-over-screen::-webkit-scrollbar {
-  width: 6px;
-}
-
-#leaderboard-table-wrapper::-webkit-scrollbar-thumb,
-#game-over-screen::-webkit-scrollbar-thumb {
-  background: #c2b280;
-  border-radius: 3px;
-}
-
-#leaderboard-table-wrapper::-webkit-scrollbar-track,
-#game-over-screen::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* ===== RULES MODAL ===== */
-
-#rules-modal {
+/* Shared overlay for all modals */
+#rules-modal,
+#leaderboard-modal,
+#settings-modal,
+#delete-modal,
+#privacy-modal {
   position: absolute;
   top: 0;
   left: 0;
@@ -503,24 +502,124 @@ body, html {
   align-items: center;
 }
 
-#rules-content {
+/* Privacy modal needs higher z-index (can open on top of settings) */
+#privacy-modal {
+  z-index: 35;
+}
+
+/* Shared modal content box */
+#rules-content,
+#leaderboard-modal-content,
+#settings-content,
+#delete-modal-content,
+#privacy-content {
   background-color: #fffbe6;
   border: 3px solid #c2b280;
   border-radius: 15px;
   padding: 25px;
   max-width: 420px;
+  width: 90%;
   max-height: 80%;
   overflow-y: auto;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-  text-align: left;
+  color: #5e3a00;
+}
+
+/* Leaderboard modal is slightly wider */
+#leaderboard-modal-content {
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Shared modal title */
+#rules-content h2,
+#leaderboard-modal-content h2,
+#settings-content h2,
+#delete-modal-content h2,
+#privacy-content h2 {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 15px;
   color: #5e3a00;
 }
 
 #rules-content h2 {
-  text-align: center;
   font-size: 26px;
-  margin-bottom: 15px;
+}
+
+/* Shared modal close button */
+#rules-close-btn,
+#leaderboard-close-btn,
+#settings-close-btn,
+#delete-modal-close-btn,
+#privacy-close-btn {
+  display: block;
+  margin: 15px auto 0;
+  background-color: #ffe4b5;
   color: #5e3a00;
+  border: 2px solid #5e3a00;
+  padding: 10px 30px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  width: 220px;
+  box-sizing: border-box;
+  transition: background-color 0.3s, transform 0.3s;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+#rules-close-btn:hover,
+#leaderboard-close-btn:hover,
+#settings-close-btn:hover,
+#delete-modal-close-btn:hover,
+#privacy-close-btn:hover {
+  background-color: #ffdead;
+  transform: scale(1.05);
+}
+
+/* Shared modal scrollbar */
+#rules-content::-webkit-scrollbar,
+#leaderboard-modal-content::-webkit-scrollbar,
+#settings-content::-webkit-scrollbar,
+#delete-modal-content::-webkit-scrollbar,
+#privacy-content::-webkit-scrollbar,
+#leaderboard-table-wrapper::-webkit-scrollbar,
+#leaderboard-modal-table-wrapper::-webkit-scrollbar,
+#game-over-screen::-webkit-scrollbar {
+  width: 6px;
+}
+
+#rules-content::-webkit-scrollbar-thumb,
+#leaderboard-modal-content::-webkit-scrollbar-thumb,
+#settings-content::-webkit-scrollbar-thumb,
+#delete-modal-content::-webkit-scrollbar-thumb,
+#privacy-content::-webkit-scrollbar-thumb,
+#leaderboard-table-wrapper::-webkit-scrollbar-thumb,
+#leaderboard-modal-table-wrapper::-webkit-scrollbar-thumb,
+#game-over-screen::-webkit-scrollbar-thumb {
+  background: #c2b280;
+  border-radius: 3px;
+}
+
+#rules-content::-webkit-scrollbar-track,
+#leaderboard-modal-content::-webkit-scrollbar-track,
+#settings-content::-webkit-scrollbar-track,
+#delete-modal-content::-webkit-scrollbar-track,
+#privacy-content::-webkit-scrollbar-track,
+#leaderboard-table-wrapper::-webkit-scrollbar-track,
+#leaderboard-modal-table-wrapper::-webkit-scrollbar-track,
+#game-over-screen::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ========================================= */
+/* MODAL — RULES                             */
+/* ========================================= */
+
+#rules-content {
+  text-align: left;
 }
 
 .rules-lore {
@@ -582,200 +681,9 @@ body, html {
   margin: 15px 0 10px;
 }
 
-#rules-close-btn {
-  display: block;
-  margin: 0 auto;
-  background-color: #ffe4b5;
-  color: #5e3a00;
-  border: 2px solid #5e3a00;
-  padding: 12px 30px;
-  font-size: 18px;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: background-color 0.3s, transform 0.3s;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-#rules-close-btn:hover {
-  background-color: #ffdead;
-  transform: scale(1.05);
-}
-
-/* Скроллбар для модалки */
-#rules-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-#rules-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-#rules-content::-webkit-scrollbar-thumb {
-  background: #c2b280;
-  border-radius: 3px;
-}
-
-/* ===== Кнопки правил (стиль dashed) ===== 
-
-#rules-btn,
-#rules-btn-pause {
-  background-color: transparent !important;
-  color: #5e3a00;
-  border: 2px dashed #c2b280 !important;
-  padding: 10px 25px;
-  font-size: 18px;
-  cursor: pointer;
-  border-radius: 8px;
-  margin: 6px;
-  transition: all 0.3s;
-  box-shadow: none !important;
-}
-
-#rules-btn:hover,
-#rules-btn-pause:hover {
-  background-color: rgba(194, 178, 128, 0.2) !important;
-  border-style: solid !important;
-  transform: scale(1.05);
-}*/
-
-/* ===== DESKTOP: увеличенный UI ===== */
-
-@media (min-width: 1201px) {
-  #score-container {
-    font-size: 22px;
-    top: 15px;
-    right: 15px;
-  }
-
-  #current-score {
-    font-size: 24px;
-  }
-
-  #high-score {
-    font-size: 18px;
-  }
-
-  .ui-label {
-    font-size: 16px;
-  }
-
-  #health-bar,
-  #missed-bar {
-    width: 160px;
-    height: 22px;
-  }
-
-#mini-leaderboard {
-  margin-top: 10px;
-  background: rgba(255, 250, 230, 0.85);
-  border: 2px solid #c2b280;
-  border-radius: 8px;
-  padding: 6px 10px;
-  max-width: 180px;
-}
-
-  .mini-lb-title {
-    font-size: 14px;
-  }
-
-  #mini-leaderboard-list {
-    font-size: 13px;
-  }
-
-  #touch-controls {
-    display: none !important;
-  }
-}
-
-/* ===== МОБИЛКИ: компактный UI ===== */
-
-@media (max-width: 768px) {
-  #mini-leaderboard {
-    max-width: 150px;
-  }
-
-  .mini-lb-title {
-    font-size: 11px;
-  }
-
-  #mini-leaderboard-list {
-    font-size: 11px;
-  }
-
-  #game-over-screen {
-    padding: 15px;
-    max-height: 80vh;
-    width: 92%;
-  }
-
-  #game-over-screen h1 {
-    font-size: 28px;
-    margin-bottom: 12px;
-  }
-
-  #game-over-score-summary {
-    font-size: 16px;
-    gap: 12px;
-  }
-
-  #leaderboard-table {
-    font-size: 12px;
-  }
-
-  #leaderboard-table th,
-  #leaderboard-table td {
-    padding: 5px 4px;
-  }
-
-  #leaderboard-table-wrapper {
-    max-height: 150px;
-  }
-
-  #start-menu button,
-  #game-over-screen button,
-  #pause-menu button {
-    padding: 12px 24px;
-    font-size: 18px;
-  }
-}
-
-
-/* ===== LEADERBOARD MODAL ===== */
-
-#leaderboard-modal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  z-index: 30;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#leaderboard-modal-content {
-  background-color: #fffbe6;
-  border: 3px solid #c2b280;
-  border-radius: 15px;
-  padding: 25px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80%;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-  color: #5e3a00;
-}
-
-#leaderboard-modal-content h2 {
-  text-align: center;
-  font-size: 26px;
-  margin-bottom: 15px;
-  color: #5e3a00;
-  flex-shrink: 0;
-}
+/* ========================================= */
+/* MODAL — LEADERBOARD (full)                */
+/* ========================================= */
 
 #leaderboard-modal-table-wrapper {
   flex: 1;
@@ -818,7 +726,6 @@ body, html {
   background: rgba(255, 228, 181, 0.3);
 }
 
-/* Медали для топ-3 */
 #leaderboard-modal-table tbody tr:nth-child(1) td:first-child::before { content: '🥇 '; }
 #leaderboard-modal-table tbody tr:nth-child(2) td:first-child::before { content: '🥈 '; }
 #leaderboard-modal-table tbody tr:nth-child(3) td:first-child::before { content: '🥉 '; }
@@ -830,62 +737,188 @@ body, html {
   padding: 20px;
 }
 
-#leaderboard-close-btn {
-  display: block;
-  margin: 0 auto;
+/* ========================================= */
+/* MODAL — SETTINGS                          */
+/* ========================================= */
+
+.settings-section {
+  background: rgba(194, 178, 128, 0.1);
+  border: 2px solid #c2b280;
+  border-radius: 10px;
+  padding: 12px 15px;
+  margin-bottom: 12px;
+}
+
+.settings-section h3 {
+  font-size: 15px;
+  margin: 0 0 10px;
+  color: #5e3a00;
+  text-align: center;
+}
+
+.settings-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-buttons button {
   background-color: #ffe4b5;
   color: #5e3a00;
   border: 2px solid #5e3a00;
-  padding: 12px 30px;
-  font-size: 18px;
+  padding: 10px 16px;
+  font-size: 16px;
   cursor: pointer;
   border-radius: 8px;
-  min-width: 200px;
-  transition: background-color 0.3s, transform 0.3s;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  flex-shrink: 0;
+  transition: all 0.3s;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-#leaderboard-close-btn:hover {
+.settings-buttons button:hover {
   background-color: #ffdead;
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
-/* Скроллбар */
-#leaderboard-modal-table-wrapper::-webkit-scrollbar {
-  width: 6px;
+/* Delete button inside settings — red theme, full width */
+.settings-buttons #delete-data-btn {
+  background-color: transparent;
+  border: 2px solid #cc4444;
+  color: #cc4444;
+  font-size: 16px;
+  padding: 10px 16px;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: none;
+  opacity: 0.8;
 }
 
-#leaderboard-modal-table-wrapper::-webkit-scrollbar-track {
-  background: transparent;
+.settings-buttons #delete-data-btn:hover {
+  opacity: 1;
+  background-color: rgba(204, 68, 68, 0.1);
+  transform: scale(1.02);
 }
 
-#leaderboard-modal-table-wrapper::-webkit-scrollbar-thumb {
-  background: #c2b280;
-  border-radius: 3px;
+/* Credits text */
+.credits-text {
+  font-size: 13px;
+  line-height: 1.6;
 }
 
-/* ===== МОБИЛКИ ===== */
-@media (max-width: 768px) {
-  #leaderboard-modal-content {
-    padding: 15px;
-    max-height: 85%;
-  }
-
-  #leaderboard-modal-table {
-    font-size: 12px;
-  }
-
-  #leaderboard-modal-table th,
-  #leaderboard-modal-table td {
-    padding: 6px 4px;
-  }
+.credits-text p {
+  margin: 4px 0;
 }
 
+/* ========================================= */
+/* MODAL — DELETE DATA                       */
+/* ========================================= */
 
+.delete-method {
+  background: rgba(194, 178, 128, 0.1);
+  border: 2px solid #c2b280;
+  border-radius: 10px;
+  padding: 12px 15px;
+  margin-bottom: 12px;
+}
 
+.delete-method h3 {
+  font-size: 15px;
+  margin: 0 0 6px;
+  color: #5e3a00;
+}
 
-/* ===== GDPR BANNER ===== */
+.delete-method p {
+  font-size: 13px;
+  margin: 0 0 10px;
+  line-height: 1.4;
+  color: #5e3a00;
+}
+
+.delete-method button {
+  background-color: #ffcccc;
+  color: #cc4444;
+  border: 2px solid #cc4444;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s;
+  width: 100%;
+}
+
+.delete-method button:hover {
+  background-color: #ff9999;
+  transform: scale(1.02);
+}
+
+#delete-result {
+  text-align: center;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+#delete-result.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+#delete-result.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+#delete-result.warning {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.delete-fallback {
+  margin: 15px 0;
+  padding: 10px;
+  background: rgba(194, 178, 128, 0.1);
+  border-radius: 8px;
+  font-size: 12px;
+  text-align: center;
+  color: #5e3a00;
+  line-height: 1.5;
+}
+
+/* ========================================= */
+/* MODAL — PRIVACY POLICY                    */
+/* ========================================= */
+
+.privacy-text h3 {
+  font-size: 15px;
+  margin: 12px 0 6px;
+  color: #5e3a00;
+}
+
+.privacy-text p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 4px 0;
+}
+
+.privacy-text ul {
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.privacy-text a {
+  color: #c2b280;
+}
+
+/* ========================================= */
+/* GDPR CONSENT BANNER                       */
+/* ========================================= */
 
 #gdpr-banner {
   position: absolute;
@@ -953,280 +986,141 @@ body, html {
   text-decoration: underline;
 }
 
-/* ===== PRIVACY POLICY MODAL ===== */
+/* ========================================= */
+/* RESPONSIVE — DESKTOP (1201px+)            */
+/* ========================================= */
 
-#privacy-modal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  z-index: 35;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+@media (min-width: 1201px) {
+  #game-container {
+    max-width: 900px;
+    max-height: 100%;
+    border: 5px solid #c2b280;
+  }
+
+  #score-container {
+    font-size: 22px;
+    top: 15px;
+    right: 15px;
+  }
+
+  #current-score {
+    font-size: 24px;
+  }
+
+  #high-score {
+    font-size: 18px;
+  }
+
+  .ui-label {
+    font-size: 16px;
+  }
+
+  #health-bar,
+  #missed-bar {
+    width: 160px;
+    height: 22px;
+  }
+
+  #mini-leaderboard {
+    max-width: 200px;
+  }
+
+  .mini-lb-title {
+    font-size: 14px;
+  }
+
+  #mini-leaderboard-list {
+    font-size: 13px;
+  }
+
+  #touch-controls {
+    display: none !important;
+  }
 }
 
-#privacy-content {
-  background-color: #fffbe6;
-  border: 3px solid #c2b280;
-  border-radius: 15px;
-  padding: 25px;
-  max-width: 450px;
-  width: 90%;
-  max-height: 80%;
-  overflow-y: auto;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-  color: #5e3a00;
+/* ========================================= */
+/* RESPONSIVE — TABLETS (769px–1200px)       */
+/* ========================================= */
+
+@media (min-width: 769px) and (max-width: 1200px) {
+  #game-container {
+    max-width: 700px;
+    max-height: 100%;
+    border: 5px solid #c2b280;
+  }
 }
 
-#privacy-content h2 {
-  text-align: center;
-  font-size: 24px;
-  margin-bottom: 15px;
-}
+/* ========================================= */
+/* RESPONSIVE — MOBILE (768px and below)     */
+/* ========================================= */
 
-.privacy-text h3 {
-  font-size: 15px;
-  margin: 12px 0 6px;
-  color: #5e3a00;
-}
+@media (max-width: 768px) {
+  #game-container {
+    max-width: 100%;
+    max-height: 100%;
+    border: none;
+    border-radius: 0;
+  }
 
-.privacy-text p {
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 4px 0;
-}
+  #mini-leaderboard {
+    max-width: 150px;
+  }
 
-.privacy-text ul {
-  padding-left: 20px;
-  font-size: 13px;
-  line-height: 1.5;
-}
+  .mini-lb-title {
+    font-size: 11px;
+  }
 
-.privacy-text a {
-  color: #c2b280;
-}
+  #mini-leaderboard-list {
+    font-size: 11px;
+  }
 
-#privacy-close-btn {
-  display: block;
-  margin: 15px auto 0;
-  background-color: #ffe4b5;
-  color: #5e3a00;
-  border: 2px solid #5e3a00;
-  padding: 10px 30px;
-  font-size: 16px;
-  cursor: pointer;
-  border-radius: 8px;
-  min-width: 200px;
-  transition: background-color 0.3s, transform 0.3s;
-}
+  #game-over-screen {
+    padding: 15px;
+    max-height: 80vh;
+    width: 92%;
+  }
 
-#privacy-close-btn:hover {
-  background-color: #ffdead;
-  transform: scale(1.05);
-}
+  #game-over-screen h1 {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
 
-/* Скроллбар */
-#privacy-content::-webkit-scrollbar {
-  width: 6px;
-}
+  #game-over-score-summary {
+    font-size: 16px;
+    gap: 12px;
+  }
 
-#privacy-content::-webkit-scrollbar-thumb {
-  background: #c2b280;
-  border-radius: 3px;
-}
+  #leaderboard-table {
+    font-size: 12px;
+  }
 
-/* ===== DELETE DATA MODAL ===== */
+  #leaderboard-table th,
+  #leaderboard-table td {
+    padding: 5px 4px;
+  }
 
-#delete-modal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  z-index: 30;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+  #leaderboard-table-wrapper {
+    max-height: 150px;
+  }
 
-#delete-modal-content {
-  background-color: #fffbe6;
-  border: 3px solid #c2b280;
-  border-radius: 15px;
-  padding: 25px;
-  max-width: 420px;
-  width: 90%;
-  max-height: 80%;
-  overflow-y: auto;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-  color: #5e3a00;
-}
+  #start-menu button,
+  #game-over-screen button,
+  #pause-menu button {
+    padding: 12px 24px;
+    font-size: 18px;
+  }
 
-#delete-modal-content h2 {
-  text-align: center;
-  font-size: 24px;
-  margin-bottom: 10px;
-  color: #5e3a00;
-}
+  #leaderboard-modal-content {
+    padding: 15px;
+    max-height: 85%;
+  }
 
-.delete-description {
-  text-align: center;
-  font-size: 14px;
-  margin-bottom: 15px;
-  color: #5e3a00;
-}
+  #leaderboard-modal-table {
+    font-size: 12px;
+  }
 
-.delete-method {
-  background: rgba(194, 178, 128, 0.1);
-  border: 2px solid #c2b280;
-  border-radius: 10px;
-  padding: 12px 15px;
-  margin-bottom: 12px;
-}
-
-.delete-method h3 {
-  font-size: 15px;
-  margin: 0 0 6px;
-  color: #5e3a00;
-}
-
-.delete-method p {
-  font-size: 13px;
-  margin: 0 0 10px;
-  line-height: 1.4;
-  color: #5e3a00;
-}
-
-.delete-method button {
-  background-color: #ffcccc;
-  color: #cc4444;
-  border: 2px solid #cc4444;
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.3s;
-  width: 100%;
-}
-
-.delete-method button:hover {
-  background-color: #ff9999;
-  transform: scale(1.02);
-}
-
-.delete-input-row {
-  display: flex;
-  gap: 8px;
-}
-
-.delete-input-row input {
-  flex: 1;
-  padding: 8px 10px;
-  border: 2px solid #c2b280;
-  border-radius: 8px;
-  font-size: 14px;
-  background: #fffbe6;
-  color: #5e3a00;
-  outline: none;
-}
-
-.delete-input-row input:focus {
-  border-color: #cc4444;
-}
-
-.delete-input-row button {
-  white-space: nowrap;
-  width: auto;
-}
-
-#delete-result {
-  text-align: center;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: bold;
-}
-
-#delete-result.success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-#delete-result.error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-#delete-result.warning {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeeba;
-}
-
-.delete-fallback {
-  margin: 15px 0;
-  padding: 10px;
-  background: rgba(194, 178, 128, 0.1);
-  border-radius: 8px;
-  font-size: 12px;
-  text-align: center;
-  color: #5e3a00;
-  line-height: 1.5;
-}
-
-#delete-modal-close-btn {
-  display: block;
-  margin: 10px auto 0;
-  background-color: #ffe4b5;
-  color: #5e3a00;
-  border: 2px solid #5e3a00;
-  padding: 10px 30px;
-  font-size: 16px;
-  cursor: pointer;
-  border-radius: 8px;
-  width: 220px;
-  transition: background-color 0.3s, transform 0.3s;
-}
-
-#delete-modal-close-btn:hover {
-  background-color: #ffdead;
-  transform: scale(1.05);
-}
-
-/* Скроллбар */
-#delete-modal-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-#delete-modal-content::-webkit-scrollbar-thumb {
-  background: #c2b280;
-  border-radius: 3px;
-}
-
-/* ===== DELETE DATA BUTTON (в меню) ===== */
-
-#delete-data-btn {
-  background-color: transparent !important;
-  border: 2px solid #cc4444 !important;
-  color: #cc4444 !important;
-  font-size: 14px !important;
-  padding: 8px 16px !important;
-  margin-top: 15px !important;
-  box-shadow: none !important;
-  opacity: 0.7;
-  width: 220px;
-  transition: all 0.3s;
-}
-
-#delete-data-btn:hover {
-  opacity: 1;
-  background-color: rgba(204, 68, 68, 0.1) !important;
-  transform: scale(1.05);
+  #leaderboard-modal-table th,
+  #leaderboard-modal-table td {
+    padding: 6px 4px;
+  }
 }
