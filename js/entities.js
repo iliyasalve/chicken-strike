@@ -316,8 +316,12 @@ export function spawnEnemy(canvas) {
   // Random x position within safe margins
   const x = Math.random() * (canvas.width - CONFIG.ENEMY.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
 
-  // Enemies get tougher as score increases
-  const maxHits = Math.floor(gameState.score / 100) + 1;
+  // Enemies get tougher as score increases, capped so kill time
+  // stays bounded (egg damage grows much slower than score)
+  const maxHits = Math.min(
+    Math.floor(gameState.score / 100) + 1,
+    CONFIG.ENEMY.maxToughness
+  );
 
   gameState.enemies.push({
     x, y: -CONFIG.ENEMY.size,

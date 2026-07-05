@@ -31,6 +31,7 @@ export const CONFIG = {
     size: 40,                  // Hitbox width and height (square)
     baseSpeed: 2,              // Starting fall speed. Increases with score: baseSpeed + floor(score/200)
     maxSpeed: 8,               // Fall speed cap. Without it enemies outrun the chicken (speed 5, 10 boosted) at high scores
+    maxToughness: 6,           // Enemy HP cap (grows floor(score/100)+1). Keeps far enemies killable in 1-2 volleys late game
     emojis: ['🦊', '🐺', '🐶', '😼']  // Random emoji assigned to each enemy at spawn
   },
 
