@@ -45,25 +45,34 @@ export const CONFIG = {
   /* --- Corn Power-up --- */
   CORN: {
     size: 40,                  // Hitbox width and height
-    speed: 2,                  // Fall speed
-    minInterval: 10000,        // Minimum delay between spawns (10 seconds)
-    maxInterval: 20000         // Maximum delay between spawns (20 seconds)
+    speed: 2                   // Fall speed
   },
 
   /* --- Wheat Power-up --- */
   WHEAT: {
     size: 40,                  // Hitbox width and height
-    speed: 2,                  // Fall speed
-    minInterval: 10000,        // Minimum delay between spawns (10 seconds)
-    maxInterval: 20000         // Maximum delay between spawns (20 seconds)
+    speed: 2                   // Fall speed
   },
 
   /* --- Pepper Power-up --- */
   PEPPER: {
     size: 40,                  // Hitbox width and height
-    speed: 2,                  // Fall speed
-    minInterval: 10000,        // Minimum delay between spawns (10 seconds)
-    maxInterval: 20000         // Maximum delay between spawns (20 seconds)
+    speed: 2                   // Fall speed
+  },
+
+  /* --- Power-up Spawning --- */
+  /* One shared spawner: every minInterval..maxInterval ms (random, so
+     spawns can't be predicted) exactly ONE item drops, picked by weight.
+     A single item at a time keeps pickups a meaningful choice instead
+     of the screen filling with simultaneous bonuses. */
+  ITEM_SPAWN: {
+    minInterval: 10000,        // Minimum delay between item spawns (10 seconds)
+    maxInterval: 18000,        // Maximum delay between item spawns (18 seconds)
+    weights: {                 // Relative spawn chances (corn 50%, pepper 25%, wheat 25%)
+      corn: 2,
+      pepper: 1,
+      wheat: 1
+    }
   },
 
   /* --- Enemy Spawning --- */
