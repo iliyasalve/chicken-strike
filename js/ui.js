@@ -24,6 +24,7 @@ const el = {
   highScore: document.getElementById('high-score'),
   healthBar: document.getElementById('health-bar'),
   eggDamage: document.getElementById('egg-damage'),
+  chickenSpeed: document.getElementById('chicken-speed'),
   missedBar: document.getElementById('missed-bar'),
   gameOverScreen: document.getElementById('game-over-screen'),
   gameOverReason: document.getElementById('game-over-reason'),
@@ -80,6 +81,9 @@ export function updateUI() {
 
   /* --- Egg damage indicator --- */
   el.eggDamage.textContent = `🥚 Egg Damage: ${gameState.eggDamage}`;
+
+  /* --- Chicken speed indicator (shows x2 while boosted) --- */
+  el.chickenSpeed.textContent = `🌶️ Speed: ${gameState.chicken.speed}`;
 
   /* --- Health bar: green = alive, red = lost --- */
   el.healthBar.querySelectorAll('div').forEach((seg, i) => {

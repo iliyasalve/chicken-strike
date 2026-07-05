@@ -13,7 +13,7 @@ import { setupInput } from './input.js';
 import {
   updateChicken, updateEggs, updateEnemies, updateBoss, updateItems,
   drawChicken, drawEggs, drawEnemies, drawBoss, drawItems,
-  spawnEnemy, spawnCorn, spawnWheat
+  spawnEnemy, spawnCorn, spawnWheat, spawnPepper
 } from './entities.js';
 import { handleCollisions } from './collision.js';
 import {
@@ -143,25 +143,38 @@ function gameLoop(timestamp) {
     gameState.lastSpawnTime = timestamp;
   }
 
-  /* --- Spawn corn (speed boost + damage up) at random interval --- */
-  if (timestamp - gameState.lastCornSpawnTime > gameState.nextCornInterval) {
-    spawnCorn(canvas);
-    gameState.lastCornSpawnTime = timestamp;
-    gameState.nextCornInterval = Math.floor(
-      Math.random() * (CONFIG.CORN.maxInterval - CONFIG.CORN.minInterval + 1)
-    ) + CONFIG.CORN.minInterval;
-  }
-
-  /* --- Spawn wheat (health restore) at random interval --- */
-  if (timestamp - gameState.lastWheatSpawnTime > gameState.nextWheatInterval) {
-    spawnWheat(canvas);
-    gameState.lastWheatSpawnTime = timestamp;
-    gameState.nextWheatInterval = Math.floor(
-      Math.random() * (CONFIG.WHEAT.maxInterval - CONFIG.WHEAT.minInterval + 1)
-    ) + CONFIG.WHEAT.minInterval;
+  /* --- Spawn ONE power-up (corn/pepper/wheat) at random interval --- */
+  /* Shared spawner: weighted random pick, so bonuses never flood the
+     screen and the next drop can't be predicted. */
+  if (timestamp - gameState.lastItemSpawnTime > gameState.nextItemInterval) {
+    spawnRandomItem();
+    gameState.lastItemSpawnTime = timestamp;
+    gameState.nextItemInterval = Math.floor(
+      Math.random() * (CONFIG.ITEM_SPAWN.maxInterval - CONFIG.ITEM_SPAWN.minInterval + 1)
+    ) + CONFIG.ITEM_SPAWN.minInterval;
   }
 
   animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+/* ========================================= */
+/* ITEM SPAWNER                              */
+/* Picks one power-up type by weight and     */
+/* spawns it. Weights in CONFIG.ITEM_SPAWN.  */
+/* ========================================= */
+
+function spawnRandomItem() {
+  const weights = CONFIG.ITEM_SPAWN.weights;
+  const total = weights.corn + weights.pepper + weights.wheat;
+  const roll = Math.random() * total;
+
+  if (roll < weights.corn) {
+    spawnCorn(canvas);
+  } else if (roll < weights.corn + weights.pepper) {
+    spawnPepper(canvas);
+  } else {
+    spawnWheat(canvas);
+  }
 }
 
 /* ========================================= */

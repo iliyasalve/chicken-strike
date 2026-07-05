@@ -14,7 +14,9 @@ export const CONFIG = {
   CHICKEN: {
     width: 130,                // Hitbox width in pixels
     height: 130,               // Hitbox height in pixels
-    speed: 5                   // Base horizontal movement speed (pixels per frame at 60fps, scaled by deltaTime)
+    speed: 5,                  // Base horizontal movement speed (pixels per frame at 60fps, scaled by deltaTime)
+    speedIncrease: 1,          // Permanent speed gained per pepper level-up (triangular progression)
+    maxSpeedLevel: 3           // Permanent speed cap: base 5 -> 8 max (matches ENEMY.maxSpeed)
   },
 
   /* --- Projectile (Egg) --- */
@@ -29,6 +31,7 @@ export const CONFIG = {
     size: 40,                  // Hitbox width and height (square)
     baseSpeed: 2,              // Starting fall speed. Increases with score: baseSpeed + floor(score/200)
     maxSpeed: 8,               // Fall speed cap. Without it enemies outrun the chicken (speed 5, 10 boosted) at high scores
+    maxToughness: 6,           // Enemy HP cap (grows floor(score/100)+1). Keeps far enemies killable in 1-2 volleys late game
     emojis: ['🦊', '🐺', '🐶', '😼']  // Random emoji assigned to each enemy at spawn
   },
 
@@ -43,17 +46,34 @@ export const CONFIG = {
   /* --- Corn Power-up --- */
   CORN: {
     size: 40,                  // Hitbox width and height
-    speed: 2,                  // Fall speed
-    minInterval: 10000,        // Minimum delay between spawns (10 seconds)
-    maxInterval: 20000         // Maximum delay between spawns (20 seconds)
+    speed: 2                   // Fall speed
   },
 
   /* --- Wheat Power-up --- */
   WHEAT: {
     size: 40,                  // Hitbox width and height
-    speed: 2,                  // Fall speed
-    minInterval: 10000,        // Minimum delay between spawns (10 seconds)
-    maxInterval: 20000         // Maximum delay between spawns (20 seconds)
+    speed: 2                   // Fall speed
+  },
+
+  /* --- Pepper Power-up --- */
+  PEPPER: {
+    size: 40,                  // Hitbox width and height
+    speed: 2                   // Fall speed
+  },
+
+  /* --- Power-up Spawning --- */
+  /* One shared spawner: every minInterval..maxInterval ms (random, so
+     spawns can't be predicted) exactly ONE item drops, picked by weight.
+     A single item at a time keeps pickups a meaningful choice instead
+     of the screen filling with simultaneous bonuses. */
+  ITEM_SPAWN: {
+    minInterval: 10000,        // Minimum delay between item spawns (10 seconds)
+    maxInterval: 18000,        // Maximum delay between item spawns (18 seconds)
+    weights: {                 // Relative spawn chances (corn 50%, pepper 25%, wheat 25%)
+      corn: 2,
+      pepper: 1,
+      wheat: 1
+    }
   },
 
   /* --- Enemy Spawning --- */
@@ -71,15 +91,16 @@ export const CONFIG = {
     scoreBeforeBoss: 1200      // Boss spawns when score reaches this value
   },
 
-  /* --- Corn Boost Effects --- */
+  /* --- Power-up Boost Effects --- */
   BOOST: {
-    duration: 5000,            // Speed boost duration (5 seconds)
+    duration: 5000,            // Temporary speed boost duration (5 seconds), granted by pepper
     speedMultiplier: 2,        // Chicken speed multiplied by this during boost
     damageIncrease: 1          // Egg damage gained per damage level-up (see triangular progression below)
-    // Damage progression: each +1 damage costs one more corn than the
-    // previous (1 corn -> dmg 2, +2 corns -> dmg 3, +3 -> dmg 4, ...).
-    // Soft cap: damage keeps growing but ever slower, so corn stays
-    // valuable (speed boost is granted on every pickup) without eggs
-    // one-shotting everything late game. Endless-friendly.
+    // Triangular progressions: each level-up costs one more pickup than
+    // the previous (1 -> 2 -> 3 -> ...).
+    //   Corn:   permanent +damageIncrease egg damage (soft cap: ever slower)
+    //   Pepper: permanent +speedIncrease chicken speed (hard cap: maxSpeedLevel)
+    // Pepper also grants the temporary x2 boost on EVERY pickup, so
+    // pickups never become worthless. Endless-friendly.
   }
 };

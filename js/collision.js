@@ -10,7 +10,7 @@
 /* ========================================= */
 
 import { CONFIG } from './config.js';
-import { gameState } from './state.js';
+import { gameState, chickenPermSpeed } from './state.js';
 import { updateUI, setGrassState } from './ui.js';
 import { soundState, splatSound, damageSound, chickenEatSound } from '../js/music.js';
 
@@ -103,20 +103,16 @@ export function handleCollisions() {
 
   /* ----------------------------------------- */
   /* CHICKEN vs CORN (power-up)                */
-  /* Activates temporary speed boost (every     */
-  /* pickup) and progresses egg damage on a     */
-  /* triangular curve: each +1 damage costs     */
-  /* one more corn than the previous level      */
-  /* (1, 2, 3, ... corns). Soft-caps damage     */
-  /* so the boss isn't one-shot late game.      */
+  /* Progresses egg damage on a triangular      */
+  /* curve: each +1 damage costs one more corn  */
+  /* than the previous level (1, 2, 3, ...).    */
+  /* Soft-caps damage so the boss isn't         */
+  /* one-shot late game. Speed boost belongs    */
+  /* to the pepper item.                        */
   /* ----------------------------------------- */
 
   gameState.corns = gameState.corns.filter(corn => {
     if (isColliding(gameState.chicken, corn)) {
-      gameState.speedBoostActive = true;
-      gameState.speedBoostEndTime = Date.now() + CONFIG.BOOST.duration;
-      gameState.chicken.speed = CONFIG.CHICKEN.speed * CONFIG.BOOST.speedMultiplier;
-
       // Triangular damage progression
       gameState.cornsTowardNextDamage++;
       if (gameState.cornsTowardNextDamage >= gameState.nextDamageCost) {
@@ -152,6 +148,42 @@ export function handleCollisions() {
       return false; // Remove wheat
     }
     return true; // Keep wheat
+  });
+
+  /* ----------------------------------------- */
+  /* CHICKEN vs PEPPER (power-up)              */
+  /* Activates temporary speed boost (every     */
+  /* pickup) and progresses permanent chicken   */
+  /* speed on a triangular curve (1, 2, 3, ...  */
+  /* peppers per +1), hard-capped at            */
+  /* maxSpeedLevel so the chicken never         */
+  /* outruns the game.                          */
+  /* ----------------------------------------- */
+
+  gameState.peppers = gameState.peppers.filter(pepper => {
+    if (isColliding(gameState.chicken, pepper)) {
+      // Triangular permanent speed progression (hard cap)
+      if (gameState.speedLevel < CONFIG.CHICKEN.maxSpeedLevel) {
+        gameState.peppersTowardNextSpeed++;
+        if (gameState.peppersTowardNextSpeed >= gameState.nextSpeedCost) {
+          gameState.speedLevel++;
+          gameState.peppersTowardNextSpeed = 0;
+          gameState.nextSpeedCost++;
+        }
+      }
+
+      // Temporary boost on every pickup (applies on top of perm speed)
+      gameState.speedBoostActive = true;
+      gameState.speedBoostEndTime = Date.now() + CONFIG.BOOST.duration;
+      gameState.chicken.speed = chickenPermSpeed() * CONFIG.BOOST.speedMultiplier;
+
+      if (!soundState.sfxMuted) {
+        chickenEatSound.play();
+      }
+
+      return false; // Remove pepper
+    }
+    return true; // Keep pepper
   });
 
   /* ----------------------------------------- */

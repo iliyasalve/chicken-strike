@@ -995,16 +995,35 @@ body, html {
 }
 
 /* ========================================= */
-/* RESPONSIVE — DESKTOP (1201px+)            */
+/* RESPONSIVE — TABLET & DESKTOP (769px+)    */
+/* Framed window with a fixed-width play     */
+/* column: the canvas (= actual game area,   */
+/* spawns and movement derive from its size) */
+/* is 550px centered, and the side gutters   */
+/* host the HUD so it never covers gameplay. */
+/* Play width is part of game balance —      */
+/* don't widen it without re-checking        */
+/* difficulty (see AUDIT.md, batch 2b).      */
 /* ========================================= */
 
-@media (min-width: 1201px) {
+@media (min-width: 769px) {
   #game-container {
     max-width: 900px;
     max-height: 100%;
     border: 5px solid #c2b280;
   }
 
+  #gameCanvas {
+    width: 550px;
+    margin: 0 auto;
+  }
+}
+
+/* ========================================= */
+/* RESPONSIVE — DESKTOP (1201px+)            */
+/* ========================================= */
+
+@media (min-width: 1201px) {
   #score-container {
     font-size: 22px;
     top: 15px;
@@ -1025,12 +1044,12 @@ body, html {
 
   #health-bar,
   #missed-bar {
-    width: 160px;
+    width: 150px;              /* Fits the 175px side gutter next to the 550px play column */
     height: 22px;
   }
 
   #mini-leaderboard {
-    max-width: 200px;
+    max-width: 150px;          /* Fits the 175px side gutter next to the 550px play column */
   }
 
   .mini-lb-title {
@@ -1043,18 +1062,6 @@ body, html {
 
   #touch-controls {
     display: none !important;
-  }
-}
-
-/* ========================================= */
-/* RESPONSIVE — TABLETS (769px–1200px)       */
-/* ========================================= */
-
-@media (min-width: 769px) and (max-width: 1200px) {
-  #game-container {
-    max-width: 700px;
-    max-height: 100%;
-    border: 5px solid #c2b280;
   }
 }
 
