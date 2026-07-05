@@ -194,7 +194,12 @@ export function updateEggs(dtFactor = 1) {
  * - Triggers game over if too many enemies missed
  */
 export function updateEnemies(canvas, dtFactor = 1) {
-  const speed = CONFIG.ENEMY.baseSpeed + Math.floor(gameState.score / 200);
+  // Speed grows with score but is capped so enemies stay dodgeable
+  // (chicken moves at 5, or 10 with boost)
+  const speed = Math.min(
+    CONFIG.ENEMY.baseSpeed + Math.floor(gameState.score / 200),
+    CONFIG.ENEMY.maxSpeed
+  );
 
   // Visual feedback: grass scrolls faster when enemies are fast
   if (speed > 4) {
