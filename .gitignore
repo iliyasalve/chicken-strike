@@ -3,3 +3,6 @@ AUDIT.md
 
 # OS
 .DS_Store
+
+# Local dev/preview helpers
+.claude/
