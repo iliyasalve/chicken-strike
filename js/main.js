@@ -39,6 +39,20 @@ const ctx = canvas.getContext('2d');
 
 let animationFrameId = null;
 
+/* --- Delta time tracking --- */
+/* Timestamp of the previous frame. 0 means "no previous frame"
+   (fresh loop start), in which case one 60fps frame is assumed. */
+let lastFrameTime = 0;
+
+// Longest frame gap we compensate for (ms). Caps dt after lag spikes
+// or tab switches so entities don't teleport across the screen.
+const MAX_FRAME_DELTA = 50;
+
+// Reference frame duration at 60fps (ms). All speeds in CONFIG are
+// tuned as "pixels per frame at 60fps"; dtFactor scales them so the
+// game runs at the same real-time speed on 30/120/144Hz displays.
+const BASE_FRAME_TIME = 1000 / 60;
+
 /**
  * Cancels any running game loop.
  * Must be called before starting a new loop
@@ -49,6 +63,7 @@ function stopLoop() {
     cancelAnimationFrame(animationFrameId);
     animationFrameId = null;
   }
+  lastFrameTime = 0; // Next loop start gets a clean dt
 }
 
 /* ========================================= */
@@ -84,19 +99,29 @@ function gameLoop(timestamp) {
 
   /* --- Pause: loop stays alive but skips updates/draws --- */
   if (gameState.paused) {
+    // Keep the frame clock current so unpausing doesn't produce
+    // a huge dt (entities would jump on resume otherwise)
+    lastFrameTime = timestamp;
     animationFrameId = requestAnimationFrame(gameLoop);
     return;
   }
+
+  /* --- Delta time --- */
+  // dtFactor = 1 at exactly 60fps, ~0.5 at 120Hz, ~2 at 30Hz.
+  // First frame after loop start assumes one 60fps frame.
+  const delta = lastFrameTime ? Math.min(timestamp - lastFrameTime, MAX_FRAME_DELTA) : BASE_FRAME_TIME;
+  const dtFactor = delta / BASE_FRAME_TIME;
+  lastFrameTime = timestamp;
 
   /* --- Clear canvas --- */
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   /* --- Update all entities --- */
-  updateChicken(canvas);
-  updateEggs();
-  updateEnemies(canvas);
-  updateBoss(canvas);
-  updateItems(canvas);
+  updateChicken(canvas, dtFactor);
+  updateEggs(dtFactor);
+  updateEnemies(canvas, dtFactor);
+  updateBoss(canvas, dtFactor);
+  updateItems(canvas, dtFactor);
   handleCollisions();
 
   /* --- Draw all entities --- */
@@ -107,7 +132,13 @@ function gameLoop(timestamp) {
   drawItems(ctx);
 
   /* --- Spawn enemies at interval --- */
-  if (timestamp - gameState.lastSpawnTime > CONFIG.SPAWN.baseInterval) {
+  // Interval shrinks with score: faster enemies leave the screen sooner,
+  // so without this the on-screen density (and perceived difficulty) drops.
+  const spawnInterval = Math.max(
+    CONFIG.SPAWN.minInterval,
+    CONFIG.SPAWN.baseInterval - gameState.score * CONFIG.SPAWN.intervalReduction
+  );
+  if (timestamp - gameState.lastSpawnTime > spawnInterval) {
     spawnEnemy(canvas);
     gameState.lastSpawnTime = timestamp;
   }

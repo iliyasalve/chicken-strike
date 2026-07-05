@@ -41,7 +41,9 @@ export const gameState = {
 
   /* --- Player stats --- */
   health: CONFIG.GAME.maxHealth,     // Current HP (max 10)
-  eggDamage: 1,                      // Damage per egg (increased by corn)
+  eggDamage: 1,                      // Damage per egg (increased by corn, triangular progression)
+  cornsTowardNextDamage: 0,          // Corns collected toward the next damage level-up
+  nextDamageCost: 1,                 // Corns required for the next +1 damage (grows by 1 each level-up)
   missedEnemies: 0,                  // Count of enemies that passed the screen
 
   /* --- Game flow --- */
@@ -113,6 +115,8 @@ export function resetGameState(canvas) {
     /* --- Reset player stats --- */
     health: CONFIG.GAME.maxHealth,
     eggDamage: 1,
+    cornsTowardNextDamage: 0,
+    nextDamageCost: 1,
     missedEnemies: 0,
 
     /* --- Reset game flow --- */
