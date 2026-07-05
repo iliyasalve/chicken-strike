@@ -19,7 +19,8 @@ import { handleCollisions } from './collision.js';
 import {
   submitScore, getLeaderboard, getFullLeaderboard,
   getLeaderboardLimit, formatDate, formatPlaytime,
-  deleteByDeviceId, hasConsent, setConsent, isUsernameTaken, getUserId
+  deleteByDeviceId, hasConsent, setConsent, isUsernameTaken, getUserId,
+  startGameSession
 } from './leaderboard.js';
 import { soundState, gameOverSound, victorySound } from '../js/music.js';
 
@@ -154,6 +155,25 @@ function showGameOverStats() {
 /* ========================================= */
 
 /**
+ * Escapes HTML-special characters to prevent stored XSS.
+ * Usernames come from the database (user-controlled) and are
+ * injected into innerHTML templates below. Without escaping,
+ * a name like `<img src=x onerror=...>` would execute for
+ * everyone who views the leaderboard.
+ * @param {*} value - Raw value (coerced to string)
+ * @returns {string} Safe-to-inject string
+ */
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
+}
+
+/**
  * Loads top 3 players into the game over screen table.
  */
 async function loadGameOverLeaderboard() {
@@ -164,9 +184,9 @@ async function loadGameOverLeaderboard() {
   tbody.innerHTML = data.map((entry, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td>${entry.username}</td>
-      <td>${entry.score}</td>
-      <td>${formatPlaytime(entry.playtime)}</td>
+      <td>${escapeHtml(entry.username)}</td>
+      <td>${escapeHtml(entry.score)}</td>
+      <td>${escapeHtml(formatPlaytime(entry.playtime))}</td>
     </tr>
   `).join('');
 }
@@ -183,8 +203,8 @@ async function loadMiniLeaderboard() {
 
   list.innerHTML = data.map(entry => `
     <li>
-      <span class="mini-lb-name">${entry.username}</span>
-      <span class="mini-lb-score">${entry.score}</span>
+      <span class="mini-lb-name">${escapeHtml(entry.username)}</span>
+      <span class="mini-lb-score">${escapeHtml(entry.score)}</span>
     </li>
   `).join('');
 }
@@ -211,10 +231,10 @@ async function loadModalLeaderboard() {
   tbody.innerHTML = data.map((entry, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td>${entry.username}</td>
-      <td>${entry.score}</td>
-      <td>${formatPlaytime(entry.playtime)}</td>
-      <td>${formatDate(entry.created_at)}</td>
+      <td>${escapeHtml(entry.username)}</td>
+      <td>${escapeHtml(entry.score)}</td>
+      <td>${escapeHtml(formatPlaytime(entry.playtime))}</td>
+      <td>${escapeHtml(formatDate(entry.created_at))}</td>
     </tr>
   `).join('');
 }
@@ -233,6 +253,9 @@ function startGame() {
   stopLoop();
   resizeCanvas();
   resetGameState(canvas);
+  // Begin a verified anti-cheat session (server-timestamped token).
+  // Fire-and-forget: the token arrives long before the game ends.
+  startGameSession();
   soundState.gameOverSoundPlayed = false;
   soundState.victorySoundPlayed = false;
   gameState.startTime = Date.now();
