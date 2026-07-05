@@ -1017,24 +1017,21 @@ body, html {
     width: 550px;
     margin: 0 auto;
     /* Explicit field edge where the lawn ends (drawn outside the
-       550px play width thanks to content-box sizing) */
-    border-left: 3px solid #5e3a00;
-    border-right: 3px solid #5e3a00;
+       550px play width thanks to content-box sizing). Dark green,
+       one shade below the grass triangles (#557a34). */
+    border-left: 3px solid #46662b;
+    border-right: 3px solid #46662b;
   }
 
   /* HUD panels sized to the side gutters: width = gutter minus the
      10px margin on each side, so they never overlap the play field
      and sit centered between window edge and field edge.
-     556px = 550px play width + 2 x 3px field border.
-     Both panels stretch to the full column height so the two
-     sidebars always match. */
+     556px = 550px play width + 2 x 3px field border. */
   #health-container,
   #score-container {
     width: calc((100% - 556px) / 2 - 20px);
-    height: calc(100% - 20px);
     top: 10px;
     box-sizing: border-box;
-    overflow: hidden;
   }
 
   #health-container {
