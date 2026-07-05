@@ -652,6 +652,8 @@ window.addEventListener('keydown', (e) => {
 /* handlers, canvas size, and UI state.      */
 /* ========================================= */
 
+let resizeLbTimer = null;
+
 window.addEventListener('resize', () => {
   resizeCanvas();
   // Re-anchor the chicken to the bottom and clamp into the new width,
@@ -660,7 +662,10 @@ window.addEventListener('resize', () => {
   gameState.chicken.x = Math.max(
     0, Math.min(canvas.width - gameState.chicken.width, gameState.chicken.x)
   );
-  loadMiniLeaderboard();
+  // Debounce the leaderboard refresh so dragging a window edge doesn't
+  // fire a Supabase request on every resize event.
+  clearTimeout(resizeLbTimer);
+  resizeLbTimer = setTimeout(loadMiniLeaderboard, 200);
 });
 
 initHealthBar();
