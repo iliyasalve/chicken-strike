@@ -23,6 +23,70 @@ const SUPABASE_KEY = 'sb_publishable_y1Ui9F8AuURFjJWWcWJqRg_fGgqjSVi';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ========================================= */
+/* EDGE FUNCTIONS (trusted write path)       */
+/* Reads (leaderboard fetch, username check) */
+/* stay direct — the table is publicly       */
+/* readable. All WRITES go through Edge       */
+/* Functions so scores are verified and       */
+/* anti-cheated server-side; the anon key     */
+/* cannot write to the table directly.        */
+/* ========================================= */
+
+const FUNCTIONS_URL = `${SUPABASE_URL}/functions/v1`;
+
+/**
+ * Raw, signed Telegram initData string (empty outside Telegram).
+ * Unlike initDataUnsafe, this is the HMAC-signed payload the
+ * server re-verifies to derive a trusted `tg_<id>` identity.
+ */
+function getInitData() {
+  return window.Telegram?.WebApp?.initData || '';
+}
+
+/**
+ * Calls an Edge Function with the anon key in the gateway headers.
+ * @returns {{status: number, data: any}}
+ */
+async function callFunction(name, payload) {
+  const res = await fetch(`${FUNCTIONS_URL}/${name}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`
+    },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json().catch(() => ({}));
+  return { status: res.status, data };
+}
+
+/* ========================================= */
+/* GAME SESSION (anti-cheat timing)          */
+/* Fetched at game start. The token carries a */
+/* server-set start time; submit-score        */
+/* measures real elapsed time from it, so the */
+/* client cannot forge how long a game lasted.*/
+/* ========================================= */
+
+let sessionToken = null;
+
+/**
+ * Starts a verified game session. Call at game start.
+ * Stores the signed token for the next score submission.
+ */
+export async function startGameSession() {
+  try {
+    const { data } = await callFunction('session', {});
+    sessionToken = data?.token ?? null;
+  } catch (err) {
+    console.error('Session start error:', err);
+    sessionToken = null;
+  }
+  return sessionToken;
+}
+
+/* ========================================= */
 /* USER IDENTIFICATION                       */
 /* Generates a unique ID per device/user.    */
 /*                                           */
@@ -123,44 +187,33 @@ export async function isUsernameTaken(username, currentUserId) {
 
 export async function submitScore(username, score, playtime) {
   try {
-    const userId = getUserId();
-
-    // Check existing score for this device
-    // maybeSingle() returns null instead of 406 error when not found
-    const { data: existing, error: fetchError } = await supabase
-      .from('leaderboard')
-      .select('score')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (fetchError) {
-      console.error('Fetch error:', fetchError);
+    // A verified session token is required. If the game-start
+    // request failed (e.g. offline), try once more before giving up.
+    if (!sessionToken) {
+      await startGameSession();
     }
 
-    // Don't overwrite a better score
-    if (existing && score <= existing.score) {
-      console.log('Score not improved. Skip update.');
-      return { updated: false };
+    const { status, data } = await callFunction('submit-score', {
+      token: sessionToken,
+      score,
+      playtime,
+      username,
+      userId: getUserId(),      // ignored server-side for Telegram users
+      initData: getInitData()   // HMAC-verified to derive tg_<id>
+    });
+
+    // 200 → { updated: true } (saved) or { updated: false } (not a record)
+    if (status === 200) {
+      return data;
     }
 
-    // Upsert: insert new record or update existing one
-    const { data, error } = await supabase
-      .from('leaderboard')
-      .upsert({
-        user_id: userId,
-        username: username,
-        score: score,
-        playtime: playtime,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'user_id'
-      })
-      .select();
+    // 409 → username taken by another device (also pre-checked client-side)
+    if (data?.error === 'name_taken') {
+      return { updated: null, error: 'name_taken' };
+    }
 
-    if (error) throw error;
-
-    console.log('Score submitted!', data);
-    return { updated: true, data };
+    console.error('submit-score failed:', status, data);
+    return null;
 
   } catch (err) {
     console.error('Leaderboard submit error:', err);
@@ -253,22 +306,21 @@ export function getLeaderboardLimit() {
 
 export async function deleteByDeviceId() {
   try {
-    const userId = getUserId();
+    const { status, data } = await callFunction('delete-my-data', {
+      userId: getUserId(),
+      initData: getInitData()
+    });
 
-    const { data, error } = await supabase
-      .from('leaderboard')
-      .delete()
-      .eq('user_id', userId)
-      .select();
+    if (status === 200 && data?.success) {
+      // Clear all local data
+      localStorage.removeItem('chicken_strike_device_id');
+      localStorage.removeItem('highScore');
+      localStorage.removeItem('gdpr_consent');
 
-    if (error) throw error;
+      return { success: true, count: data.count || 0 };
+    }
 
-    // Clear all local data
-    localStorage.removeItem('chicken_strike_device_id');
-    localStorage.removeItem('highScore');
-    localStorage.removeItem('gdpr_consent');
-
-    return { success: true, count: data?.length || 0 };
+    return { success: false, count: 0 };
 
   } catch (err) {
     console.error('Delete by device error:', err);

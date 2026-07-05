@@ -19,7 +19,8 @@ import { handleCollisions } from './collision.js';
 import {
   submitScore, getLeaderboard, getFullLeaderboard,
   getLeaderboardLimit, formatDate, formatPlaytime,
-  deleteByDeviceId, hasConsent, setConsent, isUsernameTaken, getUserId
+  deleteByDeviceId, hasConsent, setConsent, isUsernameTaken, getUserId,
+  startGameSession
 } from './leaderboard.js';
 import { soundState, gameOverSound, victorySound } from '../js/music.js';
 
@@ -252,6 +253,9 @@ function startGame() {
   stopLoop();
   resizeCanvas();
   resetGameState(canvas);
+  // Begin a verified anti-cheat session (server-timestamped token).
+  // Fire-and-forget: the token arrives long before the game ends.
+  startGameSession();
   soundState.gameOverSoundPlayed = false;
   soundState.victorySoundPlayed = false;
   gameState.startTime = Date.now();
