@@ -75,6 +75,11 @@ export const CONFIG = {
   BOOST: {
     duration: 5000,            // Speed boost duration (5 seconds)
     speedMultiplier: 2,        // Chicken speed multiplied by this during boost
-    damageIncrease: 1          // Egg damage permanently increased by this per corn collected
+    damageIncrease: 1          // Egg damage gained per damage level-up (see triangular progression below)
+    // Damage progression: each +1 damage costs one more corn than the
+    // previous (1 corn -> dmg 2, +2 corns -> dmg 3, +3 -> dmg 4, ...).
+    // Soft cap: damage keeps growing but ever slower, so corn stays
+    // valuable (speed boost is granted on every pickup) without eggs
+    // one-shotting everything late game. Endless-friendly.
   }
 };

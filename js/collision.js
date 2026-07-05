@@ -103,8 +103,12 @@ export function handleCollisions() {
 
   /* ----------------------------------------- */
   /* CHICKEN vs CORN (power-up)                */
-  /* Activates temporary speed boost and        */
-  /* permanently increases egg damage.          */
+  /* Activates temporary speed boost (every     */
+  /* pickup) and progresses egg damage on a     */
+  /* triangular curve: each +1 damage costs     */
+  /* one more corn than the previous level      */
+  /* (1, 2, 3, ... corns). Soft-caps damage     */
+  /* so the boss isn't one-shot late game.      */
   /* ----------------------------------------- */
 
   gameState.corns = gameState.corns.filter(corn => {
@@ -112,7 +116,14 @@ export function handleCollisions() {
       gameState.speedBoostActive = true;
       gameState.speedBoostEndTime = Date.now() + CONFIG.BOOST.duration;
       gameState.chicken.speed = CONFIG.CHICKEN.speed * CONFIG.BOOST.speedMultiplier;
-      gameState.eggDamage += CONFIG.BOOST.damageIncrease;
+
+      // Triangular damage progression
+      gameState.cornsTowardNextDamage++;
+      if (gameState.cornsTowardNextDamage >= gameState.nextDamageCost) {
+        gameState.eggDamage += CONFIG.BOOST.damageIncrease;
+        gameState.cornsTowardNextDamage = 0;
+        gameState.nextDamageCost++;
+      }
 
       if (!soundState.sfxMuted) {
         chickenEatSound.play();
