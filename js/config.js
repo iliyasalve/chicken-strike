@@ -29,7 +29,7 @@ export const CONFIG = {
   /* --- Regular Enemies --- */
   ENEMY: {
     size: 40,                  // Hitbox width and height (square)
-    baseSpeed: 2,              // Starting fall speed. Increases with score: baseSpeed + floor(score/200)
+    baseSpeed: 2,              // Starting fall speed. Increases with score: baseSpeed + floor(score/300)
     maxSpeed: 8,               // Fall speed cap. Without it enemies outrun the chicken (speed 5, 10 boosted) at high scores
     maxToughness: 6,           // Enemy HP cap (grows floor(score/100)+1). Keeps far enemies killable in 1-2 volleys late game
     emojis: ['🦊', '🐺', '🐶', '😼']  // Random emoji assigned to each enemy at spawn
@@ -67,10 +67,10 @@ export const CONFIG = {
      A single item at a time keeps pickups a meaningful choice instead
      of the screen filling with simultaneous bonuses. */
   ITEM_SPAWN: {
-    minInterval: 10000,        // Minimum delay between item spawns (10 seconds)
-    maxInterval: 18000,        // Maximum delay between item spawns (18 seconds)
-    weights: {                 // Relative spawn chances (corn 50%, pepper 25%, wheat 25%)
-      corn: 2,
+    minInterval: 8000,         // Minimum delay between item spawns (8 seconds)
+    maxInterval: 14000,        // Maximum delay between item spawns (14 seconds)
+    weights: {                 // Relative spawn chances (corn 60%, pepper 20%, wheat 20%)
+      corn: 3,
       pepper: 1,
       wheat: 1
     }
@@ -95,12 +95,11 @@ export const CONFIG = {
   BOOST: {
     duration: 5000,            // Temporary speed boost duration (5 seconds), granted by pepper
     speedMultiplier: 2,        // Chicken speed multiplied by this during boost
-    damageIncrease: 1          // Egg damage gained per damage level-up (see triangular progression below)
-    // Triangular progressions: each level-up costs one more pickup than
-    // the previous (1 -> 2 -> 3 -> ...).
-    //   Corn:   permanent +damageIncrease egg damage (soft cap: ever slower)
-    //   Pepper: permanent +speedIncrease chicken speed (hard cap: maxSpeedLevel)
-    // Pepper also grants the temporary x2 boost on EVERY pickup, so
-    // pickups never become worthless. Endless-friendly.
+    damageIncrease: 1          // Egg damage permanently gained per corn collected
+    // Corn: flat +1 damage per pickup. The shared item spawner keeps
+    // corn rare enough (~1 per 25s) that damage stays moderate.
+    // Pepper: permanent +speedIncrease per level-up on a triangular
+    // curve (1 -> 2 -> 3 peppers), hard-capped at maxSpeedLevel, plus
+    // the temporary x2 boost on every pickup.
   }
 };
