@@ -201,9 +201,10 @@ export function updateEggs(dtFactor = 1) {
  */
 export function updateEnemies(canvas, dtFactor = 1) {
   // Speed grows with score but is capped so enemies stay dodgeable
-  // (chicken moves at 5, or 10 with boost)
+  // (chicken starts at 5, pepper raises it to 8). Divisor 300 tuned
+  // by playtest: /200 hit chicken-speed parity already at score 600.
   const speed = Math.min(
-    CONFIG.ENEMY.baseSpeed + Math.floor(gameState.score / 200),
+    CONFIG.ENEMY.baseSpeed + Math.floor(gameState.score / 300),
     CONFIG.ENEMY.maxSpeed
   );
 
@@ -317,9 +318,10 @@ export function spawnEnemy(canvas) {
   const x = Math.random() * (canvas.width - CONFIG.ENEMY.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
 
   // Enemies get tougher as score increases, capped so kill time
-  // stays bounded (egg damage grows much slower than score)
+  // stays bounded (egg damage grows much slower than score).
+  // Divisor 150 tuned by playtest: /100 outpaced damage progression.
   const maxHits = Math.min(
-    Math.floor(gameState.score / 100) + 1,
+    Math.floor(gameState.score / 150) + 1,
     CONFIG.ENEMY.maxToughness
   );
 

@@ -103,23 +103,16 @@ export function handleCollisions() {
 
   /* ----------------------------------------- */
   /* CHICKEN vs CORN (power-up)                */
-  /* Progresses egg damage on a triangular      */
-  /* curve: each +1 damage costs one more corn  */
-  /* than the previous level (1, 2, 3, ...).    */
-  /* Soft-caps damage so the boss isn't         */
-  /* one-shot late game. Speed boost belongs    */
-  /* to the pepper item.                        */
+  /* Each corn permanently adds +1 egg damage.  */
+  /* The shared item spawner already limits     */
+  /* corn to roughly one per ~25s, so damage    */
+  /* stays moderate (boss takes 15-20 hits).    */
+  /* Speed boost belongs to the pepper item.    */
   /* ----------------------------------------- */
 
   gameState.corns = gameState.corns.filter(corn => {
     if (isColliding(gameState.chicken, corn)) {
-      // Triangular damage progression
-      gameState.cornsTowardNextDamage++;
-      if (gameState.cornsTowardNextDamage >= gameState.nextDamageCost) {
-        gameState.eggDamage += CONFIG.BOOST.damageIncrease;
-        gameState.cornsTowardNextDamage = 0;
-        gameState.nextDamageCost++;
-      }
+      gameState.eggDamage += CONFIG.BOOST.damageIncrease;
 
       if (!soundState.sfxMuted) {
         chickenEatSound.play();
