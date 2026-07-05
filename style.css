@@ -1025,11 +1025,16 @@ body, html {
   /* HUD panels sized to the side gutters: width = gutter minus the
      10px margin on each side, so they never overlap the play field
      and sit centered between window edge and field edge.
-     556px = 550px play width + 2 x 3px field border. */
+     556px = 550px play width + 2 x 3px field border.
+     Both panels stretch to the full column height so the two
+     sidebars always match. */
   #health-container,
   #score-container {
     width: calc((100% - 556px) / 2 - 20px);
+    height: calc(100% - 20px);
+    top: 10px;
     box-sizing: border-box;
+    overflow: hidden;
   }
 
   #health-container {
@@ -1040,16 +1045,23 @@ body, html {
     right: 10px;
   }
 
+  /* Keep HUD labels on one line — the panels are narrow */
+  .ui-label,
+  .mini-lb-title {
+    white-space: nowrap;
+  }
+
+  #mini-leaderboard {
+    max-width: none;
+    padding: 6px 8px;
+  }
+
   /* Bars and the mini leaderboard fill the panel instead of using
      fixed pixel widths that can overflow the gutter. */
   #health-bar,
   #missed-bar {
     width: 100%;
     box-sizing: border-box;
-  }
-
-  #mini-leaderboard {
-    max-width: none;
   }
 }
 
@@ -1059,8 +1071,7 @@ body, html {
 
 @media (min-width: 1201px) {
   #score-container {
-    font-size: 22px;
-    top: 15px;                 /* right offset comes from the gutter-panel rules (769px+ block) */
+    font-size: 22px;           /* offsets come from the gutter-panel rules (769px+ block) */
   }
 
   #current-score {
@@ -1072,7 +1083,7 @@ body, html {
   }
 
   .ui-label {
-    font-size: 16px;
+    font-size: 14px;           /* Fits "Egg Damage: NN" on one line in the gutter panel */
   }
 
   #health-bar,
@@ -1081,7 +1092,7 @@ body, html {
   }
 
   .mini-lb-title {
-    font-size: 14px;
+    font-size: 13px;           /* Fits "Top Players" on one line in the gutter panel */
   }
 
   #mini-leaderboard-list {
