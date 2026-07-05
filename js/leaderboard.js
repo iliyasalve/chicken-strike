@@ -10,7 +10,11 @@
 /*   - Date/time formatting helpers          */
 /* ========================================= */
 
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+// Pinned to an exact version (not the floating `@2`) so a CDN update
+// cannot silently change the code we load. SRI/integrity is not
+// supported for ES-module `import` URLs, so version pinning is the
+// available mitigation here.
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/+esm';
 
 /* ========================================= */
 /* SUPABASE CONNECTION                       */
