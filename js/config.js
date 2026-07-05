@@ -14,13 +14,13 @@ export const CONFIG = {
   CHICKEN: {
     width: 130,                // Hitbox width in pixels
     height: 130,               // Hitbox height in pixels
-    speed: 5                   // Base horizontal movement speed (pixels per frame)
+    speed: 5                   // Base horizontal movement speed (pixels per frame at 60fps, scaled by deltaTime)
   },
 
   /* --- Projectile (Egg) --- */
   EGG: {
     radius: 20,                // Half-size of the egg hitbox (full size = radius * 2)
-    speed: 5,                  // Upward movement speed (pixels per frame)
+    speed: 5,                  // Upward movement speed (pixels per frame at 60fps, scaled by deltaTime)
     cooldown: 300              // Minimum delay between shots (milliseconds)
   },
 

@@ -157,7 +157,7 @@ export function drawItems(ctx) {
  *   feel instant while holding a direction)
  * - Clamps position to canvas boundaries
  */
-export function updateChicken(canvas) {
+export function updateChicken(canvas, dtFactor = 1) {
   // Check if speed boost timer has expired
   if (gameState.speedBoostActive && Date.now() > gameState.speedBoostEndTime) {
     gameState.speedBoostActive = false;
@@ -172,8 +172,8 @@ export function updateChicken(canvas) {
     gameState.chicken.dx = Math.sign(gameState.chicken.dx) * gameState.chicken.speed;
   }
 
-  // Apply movement and clamp to canvas edges
-  gameState.chicken.x += gameState.chicken.dx;
+  // Apply movement (scaled by frame time) and clamp to canvas edges
+  gameState.chicken.x += gameState.chicken.dx * dtFactor;
   gameState.chicken.x = Math.max(0, Math.min(canvas.width - gameState.chicken.width, gameState.chicken.x));
 }
 
@@ -181,9 +181,9 @@ export function updateChicken(canvas) {
  * Updates egg positions.
  * Eggs move upward. Removes eggs that go off-screen.
  */
-export function updateEggs() {
+export function updateEggs(dtFactor = 1) {
   gameState.eggs = gameState.eggs.filter(e => e.y > 0);
-  gameState.eggs.forEach(e => e.y -= CONFIG.EGG.speed);
+  gameState.eggs.forEach(e => e.y -= CONFIG.EGG.speed * dtFactor);
 }
 
 /**
@@ -193,7 +193,7 @@ export function updateEggs() {
  * - Counts missed enemies (passed bottom of screen)
  * - Triggers game over if too many enemies missed
  */
-export function updateEnemies(canvas) {
+export function updateEnemies(canvas, dtFactor = 1) {
   const speed = CONFIG.ENEMY.baseSpeed + Math.floor(gameState.score / 200);
 
   // Visual feedback: grass scrolls faster when enemies are fast
@@ -204,7 +204,7 @@ export function updateEnemies(canvas) {
   }
 
   gameState.enemies = gameState.enemies.filter(e => {
-    e.y += speed;
+    e.y += speed * dtFactor;
 
     // Enemy passed the bottom edge
     if (e.y > canvas.height) {
@@ -227,10 +227,10 @@ export function updateEnemies(canvas) {
  * Boss moves downward slowly. If it reaches the bottom,
  * the player loses immediately (health set to 0).
  */
-export function updateBoss(canvas) {
+export function updateBoss(canvas, dtFactor = 1) {
   if (!gameState.boss) return;
 
-  gameState.boss.y += gameState.boss.speed;
+  gameState.boss.y += gameState.boss.speed * dtFactor;
 
   // Boss escaped past the chicken
   if (gameState.boss.y > canvas.height) {
@@ -247,12 +247,12 @@ export function updateBoss(canvas) {
  * Both fall downward at their configured speed.
  * Removes items that go off-screen (not collected).
  */
-export function updateItems(canvas) {
+export function updateItems(canvas, dtFactor = 1) {
   gameState.corns = gameState.corns.filter(c => c.y < canvas.height);
-  gameState.corns.forEach(c => c.y += CONFIG.CORN.speed);
+  gameState.corns.forEach(c => c.y += CONFIG.CORN.speed * dtFactor);
 
   gameState.wheats = gameState.wheats.filter(w => w.y < canvas.height);
-  gameState.wheats.forEach(w => w.y += CONFIG.WHEAT.speed);
+  gameState.wheats.forEach(w => w.y += CONFIG.WHEAT.speed * dtFactor);
 }
 
 /* ========================================= */
