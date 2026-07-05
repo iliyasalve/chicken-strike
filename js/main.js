@@ -99,6 +99,18 @@ function gameLoop(timestamp) {
 
   /* --- Pause: loop stays alive but skips updates/draws --- */
   if (gameState.paused) {
+    // Freeze game time: shift every timestamp anchor forward by the
+    // paused frame delta. Otherwise spawn timers keep "running" during
+    // the pause and enemies/items spawn in a burst on resume, the shot
+    // cooldown pre-charges, and the pepper speed boost burns out.
+    const pausedDelta = timestamp - (lastFrameTime || timestamp);
+    gameState.lastSpawnTime += pausedDelta;
+    gameState.lastItemSpawnTime += pausedDelta;
+    gameState.lastShotTime += pausedDelta;
+    if (gameState.speedBoostActive) {
+      gameState.speedBoostEndTime += pausedDelta;
+    }
+
     // Keep the frame clock current so unpausing doesn't produce
     // a huge dt (entities would jump on resume otherwise)
     lastFrameTime = timestamp;
