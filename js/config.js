@@ -69,8 +69,8 @@ export const CONFIG = {
   ITEM_SPAWN: {
     minInterval: 8000,         // Minimum delay between item spawns (8 seconds)
     maxInterval: 14000,        // Maximum delay between item spawns (14 seconds)
-    weights: {                 // Relative spawn chances (corn 50%, pepper 25%, wheat 25%)
-      corn: 2,
+    weights: {                 // Relative spawn chances (corn 60%, pepper 20%, wheat 20%)
+      corn: 3,
       pepper: 1,
       wheat: 1
     }
