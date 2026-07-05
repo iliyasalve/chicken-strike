@@ -58,8 +58,9 @@ export const CONFIG = {
 
   /* --- Enemy Spawning --- */
   SPAWN: {
-    baseInterval: 1500,        // Delay between enemy spawns (milliseconds)
-    minInterval: 500,          // Fastest possible spawn rate (not currently used, for dynamic scaling)
+    baseInterval: 1500,        // Delay between enemy spawns at score 0 (milliseconds)
+    minInterval: 500,          // Fastest possible spawn rate (reached at score 2000 with reduction 0.5)
+    intervalReduction: 0.5,    // Ms shaved off the spawn interval per score point (keeps enemy density up as they get faster)
     edgeMargin: 50             // Minimum distance from screen edges for spawn position (pixels)
   },
 

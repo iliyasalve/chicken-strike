@@ -132,7 +132,13 @@ function gameLoop(timestamp) {
   drawItems(ctx);
 
   /* --- Spawn enemies at interval --- */
-  if (timestamp - gameState.lastSpawnTime > CONFIG.SPAWN.baseInterval) {
+  // Interval shrinks with score: faster enemies leave the screen sooner,
+  // so without this the on-screen density (and perceived difficulty) drops.
+  const spawnInterval = Math.max(
+    CONFIG.SPAWN.minInterval,
+    CONFIG.SPAWN.baseInterval - gameState.score * CONFIG.SPAWN.intervalReduction
+  );
+  if (timestamp - gameState.lastSpawnTime > spawnInterval) {
     spawnEnemy(canvas);
     gameState.lastSpawnTime = timestamp;
   }
