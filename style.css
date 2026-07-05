@@ -1068,15 +1068,17 @@ body, html {
 
 @media (min-width: 1201px) {
   #score-container {
-    font-size: 22px;           /* offsets come from the gutter-panel rules (769px+ block) */
+    font-size: 18px;           /* offsets come from the gutter-panel rules (769px+ block) */
   }
 
   #current-score {
-    font-size: 24px;
+    font-size: 18px;           /* Fits "Score: 99999" on one line in the gutter panel */
+    white-space: nowrap;
   }
 
   #high-score {
-    font-size: 18px;
+    font-size: 15px;
+    white-space: nowrap;
   }
 
   .ui-label {
