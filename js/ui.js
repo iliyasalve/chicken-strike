@@ -72,10 +72,12 @@ export function updateUI() {
   /* --- Score display --- */
   el.score.textContent = `Score: ${gameState.score}`;
 
-  /* --- High score: update if beaten, persist to localStorage --- */
+  /* --- High score: update in memory if beaten --- */
+  /* Persisted to localStorage once on game over (persistHighScore),
+     not here: updateUI runs every frame, and a record run would issue
+     a synchronous disk write 60 times per second (micro-stutters). */
   if (gameState.score > gameState.highScore) {
     gameState.highScore = gameState.score;
-    localStorage.setItem('highScore', gameState.highScore);
   }
   el.highScore.textContent = `🏆 Best: ${gameState.highScore}`;
 
@@ -148,6 +150,16 @@ export function resizeCanvas() {
     el.canvas.width = w;
     el.canvas.height = h;
   }
+}
+
+/* ========================================= */
+/* HIGH SCORE PERSISTENCE                    */
+/* Called once when a run ends (game over or */
+/* exit to menu) instead of every frame.     */
+/* ========================================= */
+
+export function persistHighScore() {
+  localStorage.setItem('highScore', gameState.highScore);
 }
 
 /* ========================================= */

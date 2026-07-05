@@ -7,7 +7,8 @@ import { gameState, resetGameState } from './state.js';
 import {
   resizeCanvas, updateUI, setGrassState, initHealthBar,
   hideStartMenu, showStartMenu, hideGameOver, hidePause,
-  showPause, showGameOver, playMusic, pauseMusic, resetMusic
+  showPause, showGameOver, playMusic, pauseMusic, resetMusic,
+  persistHighScore
 } from './ui.js';
 import { setupInput } from './input.js';
 import {
@@ -77,6 +78,7 @@ function gameLoop(timestamp) {
 
   /* --- Game Over: show screen, play sound, stop loop --- */
   if (gameState.gameOver) {
+    persistHighScore();
     showGameOver(gameState.gameOverReason || 'Game Over!');
     showGameOverStats();
 
@@ -339,6 +341,7 @@ function resetGame() {
  */
 function goToMenu() {
   stopLoop();
+  persistHighScore(); // Run may end mid-game here; don't lose a new record
   hideGameOver();
   hidePause();
   pauseMusic();
