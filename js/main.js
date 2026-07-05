@@ -13,7 +13,7 @@ import { setupInput } from './input.js';
 import {
   updateChicken, updateEggs, updateEnemies, updateBoss, updateItems,
   drawChicken, drawEggs, drawEnemies, drawBoss, drawItems,
-  spawnEnemy, spawnCorn, spawnWheat
+  spawnEnemy, spawnCorn, spawnWheat, spawnPepper
 } from './entities.js';
 import { handleCollisions } from './collision.js';
 import {
@@ -159,6 +159,15 @@ function gameLoop(timestamp) {
     gameState.nextWheatInterval = Math.floor(
       Math.random() * (CONFIG.WHEAT.maxInterval - CONFIG.WHEAT.minInterval + 1)
     ) + CONFIG.WHEAT.minInterval;
+  }
+
+  /* --- Spawn pepper (speed boost + perm speed) at random interval --- */
+  if (timestamp - gameState.lastPepperSpawnTime > gameState.nextPepperInterval) {
+    spawnPepper(canvas);
+    gameState.lastPepperSpawnTime = timestamp;
+    gameState.nextPepperInterval = Math.floor(
+      Math.random() * (CONFIG.PEPPER.maxInterval - CONFIG.PEPPER.minInterval + 1)
+    ) + CONFIG.PEPPER.minInterval;
   }
 
   animationFrameId = requestAnimationFrame(gameLoop);

@@ -14,7 +14,9 @@ export const CONFIG = {
   CHICKEN: {
     width: 130,                // Hitbox width in pixels
     height: 130,               // Hitbox height in pixels
-    speed: 5                   // Base horizontal movement speed (pixels per frame at 60fps, scaled by deltaTime)
+    speed: 5,                  // Base horizontal movement speed (pixels per frame at 60fps, scaled by deltaTime)
+    speedIncrease: 1,          // Permanent speed gained per pepper level-up (triangular progression)
+    maxSpeedLevel: 3           // Permanent speed cap: base 5 -> 8 max (matches ENEMY.maxSpeed)
   },
 
   /* --- Projectile (Egg) --- */
@@ -56,6 +58,14 @@ export const CONFIG = {
     maxInterval: 20000         // Maximum delay between spawns (20 seconds)
   },
 
+  /* --- Pepper Power-up --- */
+  PEPPER: {
+    size: 40,                  // Hitbox width and height
+    speed: 2,                  // Fall speed
+    minInterval: 10000,        // Minimum delay between spawns (10 seconds)
+    maxInterval: 20000         // Maximum delay between spawns (20 seconds)
+  },
+
   /* --- Enemy Spawning --- */
   SPAWN: {
     baseInterval: 1500,        // Delay between enemy spawns at score 0 (milliseconds)
@@ -71,15 +81,16 @@ export const CONFIG = {
     scoreBeforeBoss: 1200      // Boss spawns when score reaches this value
   },
 
-  /* --- Corn Boost Effects --- */
+  /* --- Power-up Boost Effects --- */
   BOOST: {
-    duration: 5000,            // Speed boost duration (5 seconds)
+    duration: 5000,            // Temporary speed boost duration (5 seconds), granted by pepper
     speedMultiplier: 2,        // Chicken speed multiplied by this during boost
     damageIncrease: 1          // Egg damage gained per damage level-up (see triangular progression below)
-    // Damage progression: each +1 damage costs one more corn than the
-    // previous (1 corn -> dmg 2, +2 corns -> dmg 3, +3 -> dmg 4, ...).
-    // Soft cap: damage keeps growing but ever slower, so corn stays
-    // valuable (speed boost is granted on every pickup) without eggs
-    // one-shotting everything late game. Endless-friendly.
+    // Triangular progressions: each level-up costs one more pickup than
+    // the previous (1 -> 2 -> 3 -> ...).
+    //   Corn:   permanent +damageIncrease egg damage (soft cap: ever slower)
+    //   Pepper: permanent +speedIncrease chicken speed (hard cap: maxSpeedLevel)
+    // Pepper also grants the temporary x2 boost on EVERY pickup, so
+    // pickups never become worthless. Endless-friendly.
   }
 };

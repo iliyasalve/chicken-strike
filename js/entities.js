@@ -15,7 +15,7 @@
 /* ========================================= */
 
 import { CONFIG } from './config.js';
-import { gameState } from './state.js';
+import { gameState, chickenPermSpeed } from './state.js';
 import { setGrassState } from './ui.js';
 
 /* ========================================= */
@@ -140,6 +140,12 @@ export function drawItems(ctx) {
     ctx.fillText('🌾', w.x, w.y);
     drawHitbox(ctx, w, 'goldenrod');
   });
+
+  gameState.peppers.forEach(p => {
+    ctx.font = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+    ctx.fillText('🌶️', p.x, p.y);
+    drawHitbox(ctx, p, 'orangered');
+  });
 }
 
 /* ========================================= */
@@ -161,7 +167,7 @@ export function updateChicken(canvas, dtFactor = 1) {
   // Check if speed boost timer has expired
   if (gameState.speedBoostActive && Date.now() > gameState.speedBoostEndTime) {
     gameState.speedBoostActive = false;
-    gameState.chicken.speed = CONFIG.CHICKEN.speed;
+    gameState.chicken.speed = chickenPermSpeed();
   }
 
   // Recalculate dx with current speed while preserving direction.
@@ -258,6 +264,9 @@ export function updateItems(canvas, dtFactor = 1) {
 
   gameState.wheats = gameState.wheats.filter(w => w.y < canvas.height);
   gameState.wheats.forEach(w => w.y += CONFIG.WHEAT.speed * dtFactor);
+
+  gameState.peppers = gameState.peppers.filter(p => p.y < canvas.height);
+  gameState.peppers.forEach(p => p.y += CONFIG.PEPPER.speed * dtFactor);
 }
 
 /* ========================================= */
@@ -335,4 +344,14 @@ export function spawnCorn(canvas) {
 export function spawnWheat(canvas) {
   const x = Math.random() * (canvas.width - CONFIG.WHEAT.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
   gameState.wheats.push({ x, y: -CONFIG.WHEAT.size, width: CONFIG.WHEAT.size, height: CONFIG.WHEAT.size });
+}
+
+/**
+ * Spawns a pepper power-up.
+ * Collecting it grants temporary speed boost
+ * and progresses permanent chicken speed.
+ */
+export function spawnPepper(canvas) {
+  const x = Math.random() * (canvas.width - CONFIG.PEPPER.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
+  gameState.peppers.push({ x, y: -CONFIG.PEPPER.size, width: CONFIG.PEPPER.size, height: CONFIG.PEPPER.size });
 }
