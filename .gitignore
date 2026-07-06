@@ -6,3 +6,6 @@ AUDIT.md
 
 # Local dev/preview helpers
 .claude/
+
+# Дизайн-спеки (рабочие доки, вне гита как AUDIT.md)
+docs/superpowers/
