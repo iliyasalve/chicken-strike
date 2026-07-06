@@ -165,10 +165,23 @@ export function drawEnemies(ctx) {
 export function drawBoss(ctx) {
   if (!gameState.boss) return;
 
+  const boss = gameState.boss;
   ctx.font = EMOJI_FONT_80;
   ctx.textBaseline = 'top';
-  ctx.fillText(gameState.boss.emoji, gameState.boss.x, gameState.boss.y);
-  drawHitbox(ctx, gameState.boss, 'purple');
+  ctx.fillText(boss.emoji, boss.x, boss.y);
+
+  // Health bar above the boss: the fight is long (15-20 hits) and
+  // moving, so the player needs to see progress
+  const barW = boss.width;
+  const barH = 6;
+  const barY = boss.y - barH - 4;
+  const ratio = Math.max(0, boss.health / CONFIG.BOSS.health);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+  ctx.fillRect(boss.x, barY, barW, barH);
+  ctx.fillStyle = ratio > 0.5 ? '#4caf50' : ratio > 0.25 ? '#ffb300' : '#e53935';
+  ctx.fillRect(boss.x, barY, barW * ratio, barH);
+
+  drawHitbox(ctx, boss, 'purple');
 }
 
 /**

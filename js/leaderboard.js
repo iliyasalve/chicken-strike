@@ -254,8 +254,10 @@ export async function getLeaderboard(limit = 10) {
     return data || [];
 
   } catch (err) {
+    // null (not []) so the UI can tell "failed to load" apart from
+    // "genuinely no records" and show an error instead of an empty list
     console.error('Leaderboard fetch error:', err);
-    return [];
+    return null;
   }
 }
 
@@ -277,8 +279,9 @@ export async function getFullLeaderboard() {
     return data || [];
 
   } catch (err) {
+    // null = fetch failed (see getLeaderboard)
     console.error('Full leaderboard fetch error:', err);
-    return [];
+    return null;
   }
 }
 

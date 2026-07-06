@@ -7,7 +7,7 @@ import { gameState, resetGameState } from './state.js';
 import {
   resizeCanvas, updateUI, setGrassState, initHealthBar,
   hideStartMenu, showStartMenu, hideGameOver, hidePause,
-  showPause, showGameOver, playMusic, pauseMusic, resetMusic,
+  showGameOver, playMusic, pauseMusic, resetMusic,
   persistHighScore
 } from './ui.js';
 import { setupInput } from './input.js';
@@ -239,6 +239,12 @@ async function loadGameOverLeaderboard() {
   const tbody = document.getElementById('leaderboard-list');
   if (!tbody) return;
 
+  // null = fetch failed: say so instead of rendering an empty table
+  if (data === null) {
+    tbody.innerHTML = '<tr><td colspan="4">⚠️ Leaderboard unavailable</td></tr>';
+    return;
+  }
+
   tbody.innerHTML = data.map((entry, i) => `
     <tr>
       <td>${i + 1}</td>
@@ -259,6 +265,12 @@ async function loadMiniLeaderboard() {
   const list = document.getElementById('mini-leaderboard-list');
   if (!list) return;
 
+  // null = fetch failed: sidebar is decorative, a short note is enough
+  if (data === null) {
+    list.innerHTML = '<li><span class="mini-lb-name">⚠️ Unavailable</span></li>';
+    return;
+  }
+
   list.innerHTML = data.map(entry => `
     <li>
       <span class="mini-lb-name">${escapeHtml(entry.username)}</span>
@@ -276,8 +288,21 @@ async function loadModalLeaderboard() {
   const tbody = document.getElementById('leaderboard-modal-list');
   const emptyMsg = document.getElementById('leaderboard-modal-empty');
   const tableWrapper = document.getElementById('leaderboard-modal-table-wrapper');
+  const retryBtn = document.getElementById('leaderboard-retry-btn');
+
+  // null = fetch failed: distinct message + a retry button
+  // (empty list gets the friendly "be the first" text instead)
+  if (data === null) {
+    emptyMsg.textContent = '⚠️ Could not load the leaderboard. Check your connection.';
+    emptyMsg.style.display = 'block';
+    retryBtn.style.display = 'inline-block';
+    tableWrapper.style.display = 'none';
+    return;
+  }
+  retryBtn.style.display = 'none';
 
   if (!data.length) {
+    emptyMsg.textContent = 'No scores yet. Be the first! 🐔';
     emptyMsg.style.display = 'block';
     tableWrapper.style.display = 'none';
     return;
@@ -448,6 +473,8 @@ document.getElementById('leaderboard-btn').addEventListener('click', async () =>
 leaderboardCloseBtn.addEventListener('click', () => {
   leaderboardModal.style.display = 'none';
 });
+
+document.getElementById('leaderboard-retry-btn').addEventListener('click', loadModalLeaderboard);
 
 leaderboardModal.addEventListener('click', (e) => {
   if (e.target === leaderboardModal) leaderboardModal.style.display = 'none';

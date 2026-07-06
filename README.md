@@ -1,77 +1,81 @@
 # Chicken Strike
 
-A fun and interactive browser game where you control a chicken that shoots eggs to defeat falling enemies and collect power-ups.
+A browser arcade game: you are the Battle Chicken, the farm's last defender.
+Shoot eggs at the forest creatures raiding the coop, collect power-ups, survive
+long enough to face the boss. Runs in any modern browser, including as a
+Telegram WebApp.
 
 ---
 
 ## Gameplay
 
-- Move the chicken left and right using arrow keys or A/D keys.
-- Shoot eggs with the Spacebar or on-screen shoot button.
-- Avoid letting enemies fall past you; too many missed enemies will end the game.
-- Collect corn 🌽 to temporarily boost speed and increase egg damage.
-- Collect wheat 🌾 to restore health.
-- Manage your health and score to survive as long as possible.
-- Pause the game with the **P** key.
-- Enjoy background music and sound effects, with options to toggle them on/off.
-
----
-
-## Features
-
-- Responsive canvas with automatic resizing.
-- Increasing difficulty as score grows (enemies move faster and get tougher).
-- Multiple enemy types represented by emojis.
-- Power-ups for speed and health.
-- Sound effects for shooting, damage, eating, and game over.
-- High score saved locally in browser storage.
-- On-screen buttons for touch controls.
-
----
+- Move left/right, shoot eggs upward at falling enemies.
+- Four enemy types with fixed stats — new, nastier ones join as your score grows:
+  - 🐶 Feral dog — slow, one egg is enough
+  - 😼 Sneaky cat — fast but fragile
+  - 🐺 Wolf — slow tank, takes several eggs
+  - 🦊 Fox — fast **and** tough
+- Power-ups drop one at a time:
+  - 🌽 Corn — permanent egg damage up
+  - 🌶️ Pepper — temporary speed burst; enough peppers raise your speed permanently
+  - 🌾 Wheat — restores 1 HP
+- Enemies deal damage on contact; let 10 slip past and it's game over.
+- At 1200 points the 👹 **boss** appears — and it zigzags.
+- Global leaderboard (opt-in, GDPR consent) with anti-cheat verified sessions.
 
 ## Controls
 
-| Input          | Action                     |
-| -------------- | -------------------------- |
-| Left Arrow / A | Move chicken left          |
-| Right Arrow / D| Move chicken right         |
-| Spacebar       | Shoot egg                  |
-| P              | Pause / resume game        |
-| Touch buttons  | Move left/right and shoot  |
+| Input           | Action                    |
+| --------------- | ------------------------- |
+| Left Arrow / A  | Move left                 |
+| Right Arrow / D | Move right                |
+| Spacebar        | Shoot egg                 |
+| P               | Pause / resume            |
+| H               | Toggle debug hitboxes     |
+| Touch buttons   | Move and shoot (mobile)   |
 
 ---
 
-## Installation & Usage
+## Running locally
 
-1. Clone or download this repository.
-2. Open `index.html` in a modern web browser.
-3. Use the on-screen buttons or keyboard to play.
+ES modules don't load from `file://` — serve the folder over HTTP:
 
----
+```bash
+python3 .claude/dev-server.py 8000   # no-cache dev server
+# or any static server:
+python3 -m http.server 8000
+```
 
-## File Structure
+Then open `http://localhost:8000`.
 
-- `index.html` — Main HTML file containing the canvas and UI elements.
-- `style.css` — Stylesheet for the game interface.
-- `game.js` — Main JavaScript game logic.
-- `assets/` — Folder containing images and sound files.
+## File structure
 
----
+- `index.html` — canvas, HUD, menus, and modals
+- `style.css` — all styling
+- `js/config.js` — every tunable constant (enemy types & spawn phases, power-ups, boss, spawn intervals)
+- `js/main.js` — game loop, screens, modal wiring
+- `js/state.js` — mutable game state + reset
+- `js/entities.js` — spawning, movement, and drawing of all entities
+- `js/collision.js` — collision handling and combat rules
+- `js/input.js` — keyboard and touch input
+- `js/ui.js` — HUD updates, health bar, music control
+- `js/music.js` — Web Audio SFX + background music
+- `js/leaderboard.js` — Supabase leaderboard client, consent, anti-cheat session
+- `supabase/` — Edge Functions (session, submit-score, delete-my-data)
+- `assets/` — images and sounds
 
-## Dependencies
+## Stack
 
-- None. Pure vanilla JavaScript, HTML5, and CSS3.
-
----
+- Vanilla JavaScript (ES modules), HTML5 canvas, CSS — no build step, no runtime dependencies.
+- [Supabase](https://supabase.com) for the leaderboard (writes go through Edge
+  Functions only; anti-cheat session tokens; RLS read-only tables).
+- Telegram WebApp integration: nickname auto-fill and HMAC-verified identity.
 
 ## Customization
 
-- Adjust constants in `game.js` such as:
-  - `CHICKEN_SPEED`
-  - `ENEMY_SPEED`
-  - `SPAWN_INTERVAL`
-  - Sound volume levels
-- Replace assets in the `assets/` folder for custom graphics or sounds.
+Game balance lives entirely in `js/config.js`: enemy types and their
+spawn-phase weights, power-up effects and drop weights, boss stats, spawn
+intervals, health and miss limits. Assets are plain files under `assets/`.
 
 ---
 
