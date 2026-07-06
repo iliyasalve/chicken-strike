@@ -57,6 +57,7 @@ export const CONFIG = {
     size: 100,                 // Hitbox width and height (larger than regular enemies)
     health: 100,               // Total HP. Each egg deals eggDamage (starts at 1, increased by corn)
     speed: 1,                  // Fall speed (slower than regular enemies)
+    hSpeed: 2.5,               // Horizontal sweep speed (px/frame @60fps). Vertical speed stays 1, so fight duration is unchanged; the sweep only makes aiming and dodging harder
     emoji: '👹'               // Boss visual
   },
 

@@ -283,6 +283,20 @@ export function updateBoss(canvas, dtFactor = 1) {
 
   gameState.boss.y += gameState.boss.speed * dtFactor;
 
+  // Ping-pong sweep: constant horizontal speed, bounce at the edges.
+  // Makes the boss a moving target (eggs fly straight up) and forces
+  // the chicken to dodge near the bottom. Constant speed by design —
+  // an escalating "fury" was rejected for readability (see spec).
+  const maxX = canvas.width - gameState.boss.width;
+  gameState.boss.x += gameState.boss.hDir * CONFIG.BOSS.hSpeed * dtFactor;
+  if (gameState.boss.x <= 0) {
+    gameState.boss.x = 0;
+    gameState.boss.hDir = 1;
+  } else if (gameState.boss.x >= maxX) {
+    gameState.boss.x = maxX;
+    gameState.boss.hDir = -1;
+  }
+
   // Boss escaped past the chicken
   if (gameState.boss.y > canvas.height) {
     gameState.boss = null;
@@ -358,14 +372,18 @@ function pickEnemyType(score) {
 export function spawnEnemy(canvas) {
   // Check if it's time to spawn the boss
   if (gameState.score >= CONFIG.GAME.scoreBeforeBoss && !gameState.boss && !gameState.bossSpawned) {
+    const bossX = Math.random() * (canvas.width - CONFIG.BOSS.size);
     gameState.boss = {
-      x: Math.random() * (canvas.width - CONFIG.BOSS.size),
+      x: bossX,
       y: -CONFIG.BOSS.size,
       width: CONFIG.BOSS.size,
       height: CONFIG.BOSS.size,
       health: CONFIG.BOSS.health,
       speed: CONFIG.BOSS.speed,
-      emoji: CONFIG.BOSS.emoji
+      emoji: CONFIG.BOSS.emoji,
+      // Sweep toward the far side of the screen (spawned left goes
+      // right and vice versa), then ping-pongs between the edges
+      hDir: bossX < (canvas.width - CONFIG.BOSS.size) / 2 ? 1 : -1
     };
     gameState.bossSpawned = true;
     return;
