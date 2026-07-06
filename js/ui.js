@@ -10,7 +10,7 @@
 /* ========================================= */
 
 import { CONFIG } from './config.js';
-import { gameState } from './state.js';
+import { gameState, viewport } from './state.js';
 import { soundState, backgroundMusic } from '../js/music.js';
 
 /* ========================================= */
@@ -168,13 +168,27 @@ export function showGameOver(reason) {
 /* ========================================= */
 
 export function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
   const w = el.canvas.clientWidth;
   const h = el.canvas.clientHeight;
 
-  if (el.canvas.width !== w || el.canvas.height !== h) {
-    el.canvas.width = w;
-    el.canvas.height = h;
+  // Logical (CSS px) size for game logic
+  viewport.width = w;
+  viewport.height = h;
+
+  // Physical buffer scaled by devicePixelRatio: without this the
+  // canvas renders at CSS resolution and retina displays stretch
+  // every pixel 2x2 — visibly blurry sprites (PERF-5)
+  const bufferW = Math.round(w * dpr);
+  const bufferH = Math.round(h * dpr);
+  if (el.canvas.width !== bufferW || el.canvas.height !== bufferH) {
+    el.canvas.width = bufferW;
+    el.canvas.height = bufferH;
   }
+
+  // Resizing the buffer resets canvas state; re-apply the DPR
+  // transform so all drawing code keeps working in CSS pixels
+  el.canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 /* ========================================= */

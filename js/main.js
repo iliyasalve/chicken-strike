@@ -3,7 +3,7 @@
 /* ========================================= */
 
 import { CONFIG } from './config.js';
-import { gameState, resetGameState } from './state.js';
+import { gameState, resetGameState, viewport } from './state.js';
 import {
   resizeCanvas, updateUI, setGrassState, initHealthBar,
   hideStartMenu, showStartMenu, hideGameOver, hidePause,
@@ -128,7 +128,7 @@ function gameLoop(timestamp) {
   lastFrameTime = timestamp;
 
   /* --- Clear canvas --- */
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0, 0, viewport.width, viewport.height);
 
   /* --- Update all entities --- */
   updateChicken(canvas, dtFactor);
@@ -747,9 +747,9 @@ window.addEventListener('resize', () => {
   resizeCanvas();
   // Re-anchor the chicken to the bottom and clamp into the new width,
   // otherwise a resize/rotation leaves it floating or off-screen.
-  gameState.chicken.y = canvas.height - gameState.chicken.height - 20;
+  gameState.chicken.y = viewport.height - gameState.chicken.height - 20;
   gameState.chicken.x = Math.max(
-    0, Math.min(canvas.width - gameState.chicken.width, gameState.chicken.x)
+    0, Math.min(viewport.width - gameState.chicken.width, gameState.chicken.x)
   );
   // Debounce the leaderboard refresh so dragging a window edge doesn't
   // fire a Supabase request on every resize event.
