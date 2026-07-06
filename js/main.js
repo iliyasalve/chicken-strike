@@ -7,7 +7,7 @@ import { gameState, resetGameState } from './state.js';
 import {
   resizeCanvas, updateUI, setGrassState, initHealthBar,
   hideStartMenu, showStartMenu, hideGameOver, hidePause,
-  showPause, showGameOver, playMusic, pauseMusic, resetMusic,
+  showGameOver, playMusic, pauseMusic, resetMusic,
   persistHighScore
 } from './ui.js';
 import { setupInput } from './input.js';
