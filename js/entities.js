@@ -135,8 +135,25 @@ export function drawEnemies(ctx) {
   if (gameState.enemies.length === 0) return;
   ctx.font = EMOJI_FONT_40;
   ctx.textBaseline = 'top';
+
+  const now = performance.now();
   gameState.enemies.forEach(e => {
-    ctx.fillText(e.emoji, e.x, e.y);
+    if (e.hitFlashUntil > now) {
+      // Hit flash: brief scale-up + transparency so the player sees
+      // the egg connected (multi-hit types would feel unresponsive
+      // otherwise)
+      const cx = e.x + e.width / 2;
+      const cy = e.y + e.height / 2;
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      ctx.translate(cx, cy);
+      ctx.scale(1.15, 1.15);
+      ctx.translate(-cx, -cy);
+      ctx.fillText(e.emoji, e.x, e.y);
+      ctx.restore();
+    } else {
+      ctx.fillText(e.emoji, e.x, e.y);
+    }
     drawHitbox(ctx, e, 'red');
   });
 }
