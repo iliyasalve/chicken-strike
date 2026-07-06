@@ -7,7 +7,8 @@ import { gameState, resetGameState } from './state.js';
 import {
   resizeCanvas, updateUI, setGrassState, initHealthBar,
   hideStartMenu, showStartMenu, hideGameOver, hidePause,
-  showPause, showGameOver, playMusic, pauseMusic, resetMusic
+  showPause, showGameOver, playMusic, pauseMusic, resetMusic,
+  persistHighScore
 } from './ui.js';
 import { setupInput } from './input.js';
 import {
@@ -22,7 +23,7 @@ import {
   deleteByDeviceId, hasConsent, setConsent, isUsernameTaken, getUserId,
   startGameSession
 } from './leaderboard.js';
-import { soundState, gameOverSound, victorySound } from '../js/music.js';
+import { soundState, gameOverSound, victorySound, unlockAudio } from '../js/music.js';
 
 /* ========================================= */
 /* CANVAS SETUP                              */
@@ -77,6 +78,7 @@ function gameLoop(timestamp) {
 
   /* --- Game Over: show screen, play sound, stop loop --- */
   if (gameState.gameOver) {
+    persistHighScore();
     showGameOver(gameState.gameOverReason || 'Game Over!');
     showGameOverStats();
 
@@ -99,6 +101,18 @@ function gameLoop(timestamp) {
 
   /* --- Pause: loop stays alive but skips updates/draws --- */
   if (gameState.paused) {
+    // Freeze game time: shift every timestamp anchor forward by the
+    // paused frame delta. Otherwise spawn timers keep "running" during
+    // the pause and enemies/items spawn in a burst on resume, the shot
+    // cooldown pre-charges, and the pepper speed boost burns out.
+    const pausedDelta = timestamp - (lastFrameTime || timestamp);
+    gameState.lastSpawnTime += pausedDelta;
+    gameState.lastItemSpawnTime += pausedDelta;
+    gameState.lastShotTime += pausedDelta;
+    if (gameState.speedBoostActive) {
+      gameState.speedBoostEndTime += pausedDelta;
+    }
+
     // Keep the frame clock current so unpausing doesn't produce
     // a huge dt (entities would jump on resume otherwise)
     lastFrameTime = timestamp;
@@ -297,6 +311,9 @@ function startGame() {
   stopLoop();
   resizeCanvas();
   resetGameState(canvas);
+  // Resume the suspended AudioContext inside the click gesture —
+  // instant, unlike the old per-element audio warmup (PERF-4)
+  unlockAudio();
   // Begin a verified anti-cheat session (server-timestamped token).
   // Fire-and-forget: the token arrives long before the game ends.
   startGameSession();
@@ -327,6 +344,7 @@ function resetGame() {
  */
 function goToMenu() {
   stopLoop();
+  persistHighScore(); // Run may end mid-game here; don't lose a new record
   hideGameOver();
   hidePause();
   pauseMusic();

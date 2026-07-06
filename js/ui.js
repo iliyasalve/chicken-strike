@@ -68,47 +68,74 @@ export function setGrassState(state) {
 /*   - Shake animation when close to limit   */
 /* ========================================= */
 
+/* updateUI runs every frame, but DOM writes trigger style/paint work
+   even when nothing changed. Each indicator is therefore dirty-checked
+   against the last rendered value and only touched on a real change.
+   Bar segments are cached as arrays by initHealthBar (no per-frame
+   querySelectorAll). */
+const rendered = {
+  score: null, highScore: null, eggDamage: null, speed: null,
+  health: null, missed: null, shake: null
+};
+const segments = { health: [], missed: [] };
+
 export function updateUI() {
   /* --- Score display --- */
-  el.score.textContent = `Score: ${gameState.score}`;
+  if (gameState.score !== rendered.score) {
+    rendered.score = gameState.score;
+    el.score.textContent = `Score: ${gameState.score}`;
+  }
 
-  /* --- High score: update if beaten, persist to localStorage --- */
+  /* --- High score: update in memory if beaten --- */
+  /* Persisted to localStorage once on game over (persistHighScore),
+     not here: updateUI runs every frame, and a record run would issue
+     a synchronous disk write 60 times per second (micro-stutters). */
   if (gameState.score > gameState.highScore) {
     gameState.highScore = gameState.score;
-    localStorage.setItem('highScore', gameState.highScore);
   }
-  el.highScore.textContent = `🏆 Best: ${gameState.highScore}`;
+  if (gameState.highScore !== rendered.highScore) {
+    rendered.highScore = gameState.highScore;
+    el.highScore.textContent = `🏆 Best: ${gameState.highScore}`;
+  }
 
   /* --- Egg damage indicator --- */
-  el.eggDamage.textContent = `🥚 Egg Damage: ${gameState.eggDamage}`;
+  if (gameState.eggDamage !== rendered.eggDamage) {
+    rendered.eggDamage = gameState.eggDamage;
+    el.eggDamage.textContent = `🥚 Egg Damage: ${gameState.eggDamage}`;
+  }
 
   /* --- Chicken speed indicator (shows x2 while boosted) --- */
-  el.chickenSpeed.textContent = `🌶️ Speed: ${gameState.chicken.speed}`;
+  if (gameState.chicken.speed !== rendered.speed) {
+    rendered.speed = gameState.chicken.speed;
+    el.chickenSpeed.textContent = `🌶️ Speed: ${gameState.chicken.speed}`;
+  }
 
   /* --- Health bar: green = alive, red = lost --- */
-  el.healthBar.querySelectorAll('div').forEach((seg, i) => {
-    seg.style.backgroundColor = i < gameState.health ? '#4caf50' : '#ff4444';
-  });
+  if (gameState.health !== rendered.health) {
+    rendered.health = gameState.health;
+    segments.health.forEach((seg, i) => {
+      seg.style.backgroundColor = i < gameState.health ? '#4caf50' : '#ff4444';
+    });
+  }
 
   /* --- Missed enemies bar: color shifts with danger level --- */
   /* Yellow (<40%) → Orange (40-70%) → Red (>70%)              */
-  el.missedBar.querySelectorAll('div').forEach((seg, i) => {
-    if (i < gameState.missedEnemies) {
-      const dangerRatio = gameState.missedEnemies / CONFIG.GAME.maxMissedEnemies;
+  if (gameState.missedEnemies !== rendered.missed) {
+    rendered.missed = gameState.missedEnemies;
+    const dangerRatio = gameState.missedEnemies / CONFIG.GAME.maxMissedEnemies;
+    const fillColor = dangerRatio > 0.7 ? '#ff0000'
+                    : dangerRatio > 0.4 ? '#ff9800'
+                    : '#ffc107';
+    segments.missed.forEach((seg, i) => {
+      seg.style.backgroundColor = i < gameState.missedEnemies ? fillColor : '#ddd';
+    });
 
-      if (dangerRatio > 0.7) seg.style.backgroundColor = '#ff0000';
-      else if (dangerRatio > 0.4) seg.style.backgroundColor = '#ff9800';
-      else seg.style.backgroundColor = '#ffc107';
-    } else {
-      seg.style.backgroundColor = '#ddd'; // Empty segment
+    /* --- Shake animation: triggers when 2 or fewer misses remain --- */
+    const shake = gameState.missedEnemies >= CONFIG.GAME.maxMissedEnemies - 2;
+    if (shake !== rendered.shake) {
+      rendered.shake = shake;
+      el.missedBar.style.animation = shake ? 'shake 0.4s infinite' : 'none';
     }
-  });
-
-  /* --- Shake animation: triggers when 2 or fewer misses remain --- */
-  if (gameState.missedEnemies >= CONFIG.GAME.maxMissedEnemies - 2) {
-    el.missedBar.style.animation = 'shake 0.4s infinite';
-  } else {
-    el.missedBar.style.animation = 'none';
   }
 }
 
@@ -151,6 +178,16 @@ export function resizeCanvas() {
 }
 
 /* ========================================= */
+/* HIGH SCORE PERSISTENCE                    */
+/* Called once when a run ends (game over or */
+/* exit to menu) instead of every frame.     */
+/* ========================================= */
+
+export function persistHighScore() {
+  localStorage.setItem('highScore', gameState.highScore);
+}
+
+/* ========================================= */
 /* HEALTH & MISSED BARS INITIALIZATION       */
 /* Creates individual <div> segments inside  */
 /* the health and missed bars.               */
@@ -164,14 +201,24 @@ export function resizeCanvas() {
 export function initHealthBar() {
   el.healthBar.innerHTML = '';
   el.missedBar.innerHTML = '';
+  segments.health = [];
+  segments.missed = [];
 
   for (let i = 0; i < CONFIG.GAME.maxHealth; i++) {
-    el.healthBar.appendChild(document.createElement('div'));
+    const seg = document.createElement('div');
+    el.healthBar.appendChild(seg);
+    segments.health.push(seg);
   }
 
   for (let i = 0; i < CONFIG.GAME.maxMissedEnemies; i++) {
-    el.missedBar.appendChild(document.createElement('div'));
+    const seg = document.createElement('div');
+    el.missedBar.appendChild(seg);
+    segments.missed.push(seg);
   }
+
+  // Invalidate the dirty-check cache so the next updateUI repaints
+  // everything against the fresh segments
+  Object.keys(rendered).forEach(k => { rendered[k] = null; });
 }
 
 /* ========================================= */

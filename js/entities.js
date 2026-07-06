@@ -25,6 +25,30 @@ import { setGrassState } from './ui.js';
 const chickenImg = new Image();
 chickenImg.src = 'assets/images/kuritsa.png';
 
+/* Emoji fonts, defined once. Assigning ctx.font forces the browser to
+   parse the font string, so draw functions set it once per call
+   instead of once per entity (PERF-1). */
+const EMOJI_FONT_40 = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+const EMOJI_FONT_80 = '80px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+
+/* Rasterize every emoji glyph the game uses into an offscreen canvas
+   at module load. The first fillText of a glyph triggers font loading/
+   rasterization on the main thread — a one-off hitch that would
+   otherwise land on the first shot, first enemy or first pickup
+   (PERF-4). Runs while the player is still in the menu. */
+{
+  const off = document.createElement('canvas');
+  off.width = 128;
+  off.height = 128;
+  const offCtx = off.getContext('2d');
+
+  const glyphs = ['🥚', '🌽', '🌾', '🌶️', CONFIG.BOSS.emoji, ...CONFIG.ENEMY.emojis];
+  offCtx.font = EMOJI_FONT_40;
+  glyphs.forEach(g => offCtx.fillText(g, 0, 60));
+  offCtx.font = EMOJI_FONT_80;
+  offCtx.fillText(CONFIG.BOSS.emoji, 0, 100);
+}
+
 /* ========================================= */
 /* DEBUG — HITBOX VISUALIZATION              */
 /* Toggle via CONFIG.DEBUG_HITBOXES (Key H)  */
@@ -47,10 +71,13 @@ function drawHitbox(ctx, obj, color = 'red') {
   ctx.lineWidth = 2;
   ctx.strokeRect(obj.x, obj.y, obj.width, obj.height);
 
-  // Show dimensions above hitbox
+  // Show dimensions above hitbox. Draw functions set the emoji font
+  // once per call, so restore it after the debug label.
+  const prevFont = ctx.font;
   ctx.fillStyle = color;
   ctx.font = '10px monospace';
   ctx.fillText(`${obj.width}x${obj.height}`, obj.x, obj.y - 3);
+  ctx.font = prevFont;
 }
 
 /* ========================================= */
@@ -92,8 +119,9 @@ export function drawChicken(ctx) {
  * Draws all active egg projectiles.
  */
 export function drawEggs(ctx) {
+  if (gameState.eggs.length === 0) return;
+  ctx.font = EMOJI_FONT_40;
   gameState.eggs.forEach(e => {
-    ctx.font = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
     ctx.fillText('🥚', e.x, e.y);
     drawHitbox(ctx, e, 'yellow');
   });
@@ -104,9 +132,10 @@ export function drawEggs(ctx) {
  * Each enemy has a random emoji assigned at spawn.
  */
 export function drawEnemies(ctx) {
+  if (gameState.enemies.length === 0) return;
+  ctx.font = EMOJI_FONT_40;
+  ctx.textBaseline = 'top';
   gameState.enemies.forEach(e => {
-    ctx.font = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
-    ctx.textBaseline = 'top';
     ctx.fillText(e.emoji, e.x, e.y);
     drawHitbox(ctx, e, 'red');
   });
@@ -119,7 +148,7 @@ export function drawEnemies(ctx) {
 export function drawBoss(ctx) {
   if (!gameState.boss) return;
 
-  ctx.font = '80px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+  ctx.font = EMOJI_FONT_80;
   ctx.textBaseline = 'top';
   ctx.fillText(gameState.boss.emoji, gameState.boss.x, gameState.boss.y);
   drawHitbox(ctx, gameState.boss, 'purple');
@@ -129,20 +158,20 @@ export function drawBoss(ctx) {
  * Draws all active power-up items (corn and wheat).
  */
 export function drawItems(ctx) {
+  if (gameState.corns.length === 0 && gameState.wheats.length === 0 && gameState.peppers.length === 0) return;
+  ctx.font = EMOJI_FONT_40;
+
   gameState.corns.forEach(c => {
-    ctx.font = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
     ctx.fillText('🌽', c.x, c.y);
     drawHitbox(ctx, c, 'green');
   });
 
   gameState.wheats.forEach(w => {
-    ctx.font = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
     ctx.fillText('🌾', w.x, w.y);
     drawHitbox(ctx, w, 'goldenrod');
   });
 
   gameState.peppers.forEach(p => {
-    ctx.font = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
     ctx.fillText('🌶️', p.x, p.y);
     drawHitbox(ctx, p, 'orangered');
   });
