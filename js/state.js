@@ -11,6 +11,19 @@
 import { CONFIG } from './config.js';
 
 /* ========================================= */
+/* VIEWPORT (logical playfield size)         */
+/* CSS-pixel size of the canvas, updated by  */
+/* resizeCanvas(). Game logic (spawns,       */
+/* clamps, off-screen checks) uses this, NOT */
+/* canvas.width/height: since the high-DPI   */
+/* fix the canvas buffer is scaled by        */
+/* devicePixelRatio and no longer matches    */
+/* logical coordinates.                      */
+/* ========================================= */
+
+export const viewport = { width: 0, height: 0 };
+
+/* ========================================= */
 /* STATE OBJECT                              */
 /* ========================================= */
 
@@ -106,8 +119,8 @@ export function resetGameState(canvas) {
     /* --- Reset chicken to center-bottom --- */
     chicken: {
       ...gameState.chicken,
-      x: canvas.width / 2 - CONFIG.CHICKEN.width / 2,
-      y: canvas.height - CONFIG.CHICKEN.height - 20,
+      x: viewport.width / 2 - CONFIG.CHICKEN.width / 2,
+      y: viewport.height - CONFIG.CHICKEN.height - 20,
       speed: CONFIG.CHICKEN.speed,
       dx: 0
     },

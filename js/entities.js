@@ -15,7 +15,7 @@
 /* ========================================= */
 
 import { CONFIG } from './config.js';
-import { gameState, chickenPermSpeed } from './state.js';
+import { gameState, chickenPermSpeed, viewport } from './state.js';
 import { setGrassState } from './ui.js';
 
 /* ========================================= */
@@ -239,7 +239,7 @@ export function updateChicken(canvas, dtFactor = 1) {
 
   // Apply movement (scaled by frame time) and clamp to canvas edges
   gameState.chicken.x += gameState.chicken.dx * dtFactor;
-  gameState.chicken.x = Math.max(0, Math.min(canvas.width - gameState.chicken.width, gameState.chicken.x));
+  gameState.chicken.x = Math.max(0, Math.min(viewport.width - gameState.chicken.width, gameState.chicken.x));
 }
 
 /**
@@ -271,7 +271,7 @@ export function updateEnemies(canvas, dtFactor = 1) {
     e.y += e.speed * dtFactor;
 
     // Enemy passed the bottom edge
-    if (e.y > canvas.height) {
+    if (e.y > viewport.height) {
       gameState.missedEnemies++;
 
       if (gameState.missedEnemies >= CONFIG.GAME.maxMissedEnemies) {
@@ -300,7 +300,7 @@ export function updateBoss(canvas, dtFactor = 1) {
   // Makes the boss a moving target (eggs fly straight up) and forces
   // the chicken to dodge near the bottom. Constant speed by design —
   // an escalating "fury" was rejected for readability (see spec).
-  const maxX = canvas.width - gameState.boss.width;
+  const maxX = viewport.width - gameState.boss.width;
   gameState.boss.x += gameState.boss.hDir * CONFIG.BOSS.hSpeed * dtFactor;
   if (gameState.boss.x <= 0) {
     gameState.boss.x = 0;
@@ -311,7 +311,7 @@ export function updateBoss(canvas, dtFactor = 1) {
   }
 
   // Boss escaped past the chicken
-  if (gameState.boss.y > canvas.height) {
+  if (gameState.boss.y > viewport.height) {
     gameState.boss = null;
     gameState.health = 0;
     gameState.gameOver = true;
@@ -326,13 +326,13 @@ export function updateBoss(canvas, dtFactor = 1) {
  * Removes items that go off-screen (not collected).
  */
 export function updateItems(canvas, dtFactor = 1) {
-  gameState.corns = gameState.corns.filter(c => c.y < canvas.height);
+  gameState.corns = gameState.corns.filter(c => c.y < viewport.height);
   gameState.corns.forEach(c => c.y += CONFIG.CORN.speed * dtFactor);
 
-  gameState.wheats = gameState.wheats.filter(w => w.y < canvas.height);
+  gameState.wheats = gameState.wheats.filter(w => w.y < viewport.height);
   gameState.wheats.forEach(w => w.y += CONFIG.WHEAT.speed * dtFactor);
 
-  gameState.peppers = gameState.peppers.filter(p => p.y < canvas.height);
+  gameState.peppers = gameState.peppers.filter(p => p.y < viewport.height);
   gameState.peppers.forEach(p => p.y += CONFIG.PEPPER.speed * dtFactor);
 }
 
@@ -385,7 +385,7 @@ function pickEnemyType(score) {
 export function spawnEnemy(canvas) {
   // Check if it's time to spawn the boss
   if (gameState.score >= CONFIG.GAME.scoreBeforeBoss && !gameState.boss && !gameState.bossSpawned) {
-    const bossX = Math.random() * (canvas.width - CONFIG.BOSS.size);
+    const bossX = Math.random() * (viewport.width - CONFIG.BOSS.size);
     gameState.boss = {
       x: bossX,
       y: -CONFIG.BOSS.size,
@@ -396,7 +396,7 @@ export function spawnEnemy(canvas) {
       emoji: CONFIG.BOSS.emoji,
       // Sweep toward the far side of the screen (spawned left goes
       // right and vice versa), then ping-pongs between the edges
-      hDir: bossX < (canvas.width - CONFIG.BOSS.size) / 2 ? 1 : -1
+      hDir: bossX < (viewport.width - CONFIG.BOSS.size) / 2 ? 1 : -1
     };
     gameState.bossSpawned = true;
     return;
@@ -408,7 +408,7 @@ export function spawnEnemy(canvas) {
   const type = pickEnemyType(gameState.score);
 
   // Random x position within safe margins
-  const x = Math.random() * (canvas.width - CONFIG.ENEMY.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
+  const x = Math.random() * (viewport.width - CONFIG.ENEMY.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
 
   gameState.enemies.push({
     x, y: -CONFIG.ENEMY.size,
@@ -425,7 +425,7 @@ export function spawnEnemy(canvas) {
  * and permanently increases egg damage.
  */
 export function spawnCorn(canvas) {
-  const x = Math.random() * (canvas.width - CONFIG.CORN.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
+  const x = Math.random() * (viewport.width - CONFIG.CORN.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
   gameState.corns.push({ x, y: -CONFIG.CORN.size, width: CONFIG.CORN.size, height: CONFIG.CORN.size });
 }
 
@@ -435,7 +435,7 @@ export function spawnCorn(canvas) {
  * (capped at maxHealth).
  */
 export function spawnWheat(canvas) {
-  const x = Math.random() * (canvas.width - CONFIG.WHEAT.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
+  const x = Math.random() * (viewport.width - CONFIG.WHEAT.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
   gameState.wheats.push({ x, y: -CONFIG.WHEAT.size, width: CONFIG.WHEAT.size, height: CONFIG.WHEAT.size });
 }
 
@@ -445,6 +445,6 @@ export function spawnWheat(canvas) {
  * and progresses permanent chicken speed.
  */
 export function spawnPepper(canvas) {
-  const x = Math.random() * (canvas.width - CONFIG.PEPPER.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
+  const x = Math.random() * (viewport.width - CONFIG.PEPPER.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
   gameState.peppers.push({ x, y: -CONFIG.PEPPER.size, width: CONFIG.PEPPER.size, height: CONFIG.PEPPER.size });
 }
