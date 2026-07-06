@@ -1,55 +1,74 @@
 /* ========================================= */
-/* AUDIO POOL (Safari Fix)                   */
-/* Creates a pool of reusable Audio objects  */
-/* to allow overlapping playback of sounds.  */
+/* SOUND EFFECTS — WEB AUDIO API             */
 /*                                           */
-/* Why:                                      */
-/*   - Browsers (especially Safari) may      */
-/*     block or glitch when the same Audio   */
-/*     element is played repeatedly.         */
-/*   - Pool allows multiple instances of     */
-/*     the same sound to play simultaneously */
-/*     (e.g. rapid shooting, collisions).    */
+/* Why Web Audio instead of <audio> pools:   */
+/*   - HTMLAudioElement decodes its resource */
+/*     lazily on the first play() and may    */
+/*     evict the decoded buffer after idle,  */
+/*     causing a main-thread hitch exactly   */
+/*     when a sound is first (or rarely)     */
+/*     needed: first shot, first kill,       */
+/*     first pickup (PERF-4 microfreezes).   */
+/*   - Web Audio decodes each file once at   */
+/*     page load (async, while the player is */
+/*     still in the menu) and keeps the PCM  */
+/*     buffer in memory. Playback just       */
+/*     creates a BufferSource — microseconds,*/
+/*     no I/O, no decode, unlimited overlap  */
+/*     (no pools needed).                    */
 /* ========================================= */
 
-function createAudioPool(src, size = 4, volume = 0.7) {
-  const pool = [];
+const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContextClass();
 
-  // Pre-create multiple Audio instances
-  for (let i = 0; i < size; i++) {
-    const audio = new Audio(src);
-    audio.volume = volume;
-    pool.push(audio);
-  }
+/**
+ * Loads and decodes a sound effect into an in-memory buffer.
+ * Decoding starts immediately at page load and runs off the
+ * critical path; play() is a no-op until the buffer is ready
+ * (only possible if a sound fires within the first moments
+ * of the very first game).
+ */
+function createSfx(src, volume = 0.7) {
+  let buffer = null;
 
-  // Index for cycling through the pool
-  let index = 0;
+  // Per-sound gain node, created once and shared by all plays
+  const gain = audioCtx.createGain();
+  gain.gain.value = volume;
+  gain.connect(audioCtx.destination);
+
+  fetch(src)
+    .then(response => response.arrayBuffer())
+    .then(data => audioCtx.decodeAudioData(data))
+    .then(decoded => { buffer = decoded; })
+    .catch(() => {}); // Missing/undecodable file → sound stays silent
 
   return {
     play() {
-      const audio = pool[index];
-
-      // Move index forward (loop back at the end)
-      index = (index + 1) % pool.length;
-
-      /* Safari-safe behavior:
-         If audio is still playing, reset it instead of waiting */
-      if (!audio.paused) {
-        audio.currentTime = 0;
-      }
-
-      // Attempt to play (ignore autoplay errors)
-      const playPromise = audio.play();
-      if (playPromise) {
-        playPromise.catch(() => {});
-      }
+      if (!buffer || audioCtx.state !== 'running') return;
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(gain);
+      source.start();
     }
   };
 }
 
+/**
+ * Resumes the AudioContext. Browsers create it in a "suspended"
+ * state until a user gesture; called from the Start button click.
+ * Safe to call repeatedly.
+ */
+export function unlockAudio() {
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+}
+
 /* ========================================= */
 /* MUSIC (Background Loop)                   */
-/* Handles continuous background music.      */
+/* Stays on HTMLAudioElement: a 4 MB looping */
+/* track should stream, not sit in RAM as    */
+/* decoded PCM.                              */
 /* ========================================= */
 
 const backgroundMusic = new Audio('assets/sounds/background_music.mp3');
@@ -58,16 +77,16 @@ backgroundMusic.volume = 0.5;    // Lower volume than SFX
 
 /* ========================================= */
 /* SOUND EFFECTS (SFX)                       */
-/* Uses audio pools instead of single Audio  */
-/* instances to support overlapping sounds.  */
+/* egg_pop is AAC (m4a): Safari's            */
+/* decodeAudioData can't handle Ogg Vorbis.  */
 /* ========================================= */
 
-const eggPopSound = createAudioPool('assets/sounds/egg_pop.ogg', 4, 0.7);
-const splatSound = createAudioPool('assets/sounds/splat.mp3', 6, 0.7);
-const chickenEatSound = createAudioPool('assets/sounds/chicken_eat.mp3', 3, 0.7);
-const damageSound = createAudioPool('assets/sounds/damage.wav', 3, 0.7);
-const gameOverSound = createAudioPool('assets/sounds/game_over.mp3', 2, 0.7);
-const victorySound = createAudioPool('assets/sounds/victory.mp3', 2, 0.7);
+const eggPopSound = createSfx('assets/sounds/egg_pop.m4a', 0.7);
+const splatSound = createSfx('assets/sounds/splat.mp3', 0.7);
+const chickenEatSound = createSfx('assets/sounds/chicken_eat.mp3', 0.7);
+const damageSound = createSfx('assets/sounds/damage.wav', 0.7);
+const gameOverSound = createSfx('assets/sounds/game_over.mp3', 0.7);
+const victorySound = createSfx('assets/sounds/victory.mp3', 0.7);
 
 /* ========================================= */
 /* GLOBAL SOUND STATE                        */

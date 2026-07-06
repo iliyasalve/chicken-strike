@@ -31,6 +31,24 @@ chickenImg.src = 'assets/images/kuritsa.png';
 const EMOJI_FONT_40 = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
 const EMOJI_FONT_80 = '80px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
 
+/* Rasterize every emoji glyph the game uses into an offscreen canvas
+   at module load. The first fillText of a glyph triggers font loading/
+   rasterization on the main thread — a one-off hitch that would
+   otherwise land on the first shot, first enemy or first pickup
+   (PERF-4). Runs while the player is still in the menu. */
+{
+  const off = document.createElement('canvas');
+  off.width = 128;
+  off.height = 128;
+  const offCtx = off.getContext('2d');
+
+  const glyphs = ['🥚', '🌽', '🌾', '🌶️', CONFIG.BOSS.emoji, ...CONFIG.ENEMY.emojis];
+  offCtx.font = EMOJI_FONT_40;
+  glyphs.forEach(g => offCtx.fillText(g, 0, 60));
+  offCtx.font = EMOJI_FONT_80;
+  offCtx.fillText(CONFIG.BOSS.emoji, 0, 100);
+}
+
 /* ========================================= */
 /* DEBUG — HITBOX VISUALIZATION              */
 /* Toggle via CONFIG.DEBUG_HITBOXES (Key H)  */

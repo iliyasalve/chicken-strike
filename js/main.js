@@ -23,7 +23,7 @@ import {
   deleteByDeviceId, hasConsent, setConsent, isUsernameTaken, getUserId,
   startGameSession
 } from './leaderboard.js';
-import { soundState, gameOverSound, victorySound } from '../js/music.js';
+import { soundState, gameOverSound, victorySound, unlockAudio } from '../js/music.js';
 
 /* ========================================= */
 /* CANVAS SETUP                              */
@@ -311,6 +311,9 @@ function startGame() {
   stopLoop();
   resizeCanvas();
   resetGameState(canvas);
+  // Resume the suspended AudioContext inside the click gesture —
+  // instant, unlike the old per-element audio warmup (PERF-4)
+  unlockAudio();
   // Begin a verified anti-cheat session (server-timestamped token).
   // Fire-and-forget: the token arrives long before the game ends.
   startGameSession();
