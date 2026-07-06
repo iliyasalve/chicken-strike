@@ -1,0 +1,28 @@
+# Pings the Supabase REST API so the free-tier project is not paused
+# for inactivity (~7 days without any API request). Any request with
+# the publishable key counts as activity; the key is already public
+# in js/leaderboard.js, so no secret is needed here.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    # Every 3 days at 06:17 UTC. Odd minute on purpose: GitHub delays
+    # or drops cron jobs scheduled exactly on the hour due to load.
+    - cron: '17 6 */3 * *'
+  # Manual run button for testing
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping leaderboard REST endpoint
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://jaaolhmbvmoaikwqudoi.supabase.co/rest/v1/leaderboard?select=id&limit=1" \
+            -H "apikey: sb_publishable_y1Ui9F8AuURFjJWWcWJqRg_fGgqjSVi")
+          echo "Supabase responded with HTTP $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::Keep-alive ping failed (HTTP $status) — project may be paused or unreachable"
+            exit 1
+          fi
