@@ -60,6 +60,10 @@ export function handleCollisions() {
       if (isColliding(egg, enemy)) {
         enemy.hits += gameState.eggDamage;
 
+        // Hit feedback: drawEnemies renders a short flash (no HP bars,
+        // the flash only confirms the hit landed)
+        enemy.hitFlashUntil = performance.now() + 120;
+
         if (!soundState.sfxMuted) {
           splatSound.play();
         }

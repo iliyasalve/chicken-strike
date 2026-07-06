@@ -42,7 +42,7 @@ const EMOJI_FONT_80 = '80px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color E
   off.height = 128;
   const offCtx = off.getContext('2d');
 
-  const glyphs = ['🥚', '🌽', '🌾', '🌶️', CONFIG.BOSS.emoji, ...CONFIG.ENEMY.emojis];
+  const glyphs = ['🥚', '🌽', '🌾', '🌶️', CONFIG.BOSS.emoji, ...CONFIG.ENEMY.types.map(t => t.emoji)];
   offCtx.font = EMOJI_FONT_40;
   glyphs.forEach(g => offCtx.fillText(g, 0, 60));
   offCtx.font = EMOJI_FONT_80;
@@ -135,8 +135,25 @@ export function drawEnemies(ctx) {
   if (gameState.enemies.length === 0) return;
   ctx.font = EMOJI_FONT_40;
   ctx.textBaseline = 'top';
+
+  const now = performance.now();
   gameState.enemies.forEach(e => {
-    ctx.fillText(e.emoji, e.x, e.y);
+    if (e.hitFlashUntil > now) {
+      // Hit flash: brief scale-up + transparency so the player sees
+      // the egg connected (multi-hit types would feel unresponsive
+      // otherwise)
+      const cx = e.x + e.width / 2;
+      const cy = e.y + e.height / 2;
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      ctx.translate(cx, cy);
+      ctx.scale(1.15, 1.15);
+      ctx.translate(-cx, -cy);
+      ctx.fillText(e.emoji, e.x, e.y);
+      ctx.restore();
+    } else {
+      ctx.fillText(e.emoji, e.x, e.y);
+    }
     drawHitbox(ctx, e, 'red');
   });
 }
@@ -229,23 +246,16 @@ export function updateEggs(dtFactor = 1) {
  * - Triggers game over if too many enemies missed
  */
 export function updateEnemies(canvas, dtFactor = 1) {
-  // Speed grows with score but is capped so enemies stay dodgeable
-  // (chicken starts at 5, pepper raises it to 8). Divisor 300 tuned
-  // by playtest: /200 hit chicken-speed parity already at score 600.
-  const speed = Math.min(
-    CONFIG.ENEMY.baseSpeed + Math.floor(gameState.score / 300),
-    CONFIG.ENEMY.maxSpeed
-  );
-
-  // Visual feedback: grass scrolls faster when enemies are fast
-  if (speed > 4) {
+  // Visual feedback: grass scrolls faster once the game heats up.
+  // Tied to a score threshold now that enemy speed is per-type.
+  if (gameState.score >= CONFIG.GAME.grassBoostScore) {
     setGrassState('boost');
   } else {
     setGrassState('moving');
   }
 
   gameState.enemies = gameState.enemies.filter(e => {
-    e.y += speed * dtFactor;
+    e.y += e.speed * dtFactor;
 
     // Enemy passed the bottom edge
     if (e.y > canvas.height) {
@@ -272,6 +282,20 @@ export function updateBoss(canvas, dtFactor = 1) {
   if (!gameState.boss) return;
 
   gameState.boss.y += gameState.boss.speed * dtFactor;
+
+  // Ping-pong sweep: constant horizontal speed, bounce at the edges.
+  // Makes the boss a moving target (eggs fly straight up) and forces
+  // the chicken to dodge near the bottom. Constant speed by design —
+  // an escalating "fury" was rejected for readability (see spec).
+  const maxX = canvas.width - gameState.boss.width;
+  gameState.boss.x += gameState.boss.hDir * CONFIG.BOSS.hSpeed * dtFactor;
+  if (gameState.boss.x <= 0) {
+    gameState.boss.x = 0;
+    gameState.boss.hDir = 1;
+  } else if (gameState.boss.x >= maxX) {
+    gameState.boss.x = maxX;
+    gameState.boss.hDir = -1;
+  }
 
   // Boss escaped past the chicken
   if (gameState.boss.y > canvas.height) {
@@ -308,6 +332,30 @@ export function updateItems(canvas, dtFactor = 1) {
 /* ========================================= */
 
 /**
+ * Picks an enemy type for the current score using the active spawn
+ * phase's weight table. Phases are sorted by fromScore; the last
+ * phase whose threshold is reached wins.
+ */
+function pickEnemyType(score) {
+  let phase = CONFIG.ENEMY.phases[0];
+  for (const p of CONFIG.ENEMY.phases) {
+    if (score >= p.fromScore) phase = p;
+  }
+
+  const entries = CONFIG.ENEMY.types
+    .map(t => [t, phase.weights[t.id] || 0])
+    .filter(([, w]) => w > 0);
+
+  const total = entries.reduce((sum, [, w]) => sum + w, 0);
+  let roll = Math.random() * total;
+  for (const [type, w] of entries) {
+    roll -= w;
+    if (roll < 0) return type;
+  }
+  return entries[entries.length - 1][0]; // Float edge case fallback
+}
+
+/**
  * Spawns a regular enemy or triggers boss.
  *
  * Boss spawn conditions:
@@ -318,20 +366,24 @@ export function updateItems(canvas, dtFactor = 1) {
  * If boss is active or was spawned, no regular
  * enemies spawn until boss fight ends.
  *
- * Enemy toughness (maxHits) scales with score:
- *   maxHits = floor(score / 100) + 1
+ * Regular enemies get their type (emoji, speed, HP)
+ * from the score-phase weight table (pickEnemyType).
  */
 export function spawnEnemy(canvas) {
   // Check if it's time to spawn the boss
   if (gameState.score >= CONFIG.GAME.scoreBeforeBoss && !gameState.boss && !gameState.bossSpawned) {
+    const bossX = Math.random() * (canvas.width - CONFIG.BOSS.size);
     gameState.boss = {
-      x: Math.random() * (canvas.width - CONFIG.BOSS.size),
+      x: bossX,
       y: -CONFIG.BOSS.size,
       width: CONFIG.BOSS.size,
       height: CONFIG.BOSS.size,
       health: CONFIG.BOSS.health,
       speed: CONFIG.BOSS.speed,
-      emoji: CONFIG.BOSS.emoji
+      emoji: CONFIG.BOSS.emoji,
+      // Sweep toward the far side of the screen (spawned left goes
+      // right and vice versa), then ping-pongs between the edges
+      hDir: bossX < (canvas.width - CONFIG.BOSS.size) / 2 ? 1 : -1
     };
     gameState.bossSpawned = true;
     return;
@@ -340,24 +392,17 @@ export function spawnEnemy(canvas) {
   // Don't spawn regular enemies during boss fight
   if (gameState.boss || gameState.bossSpawned) return;
 
-  // Pick random enemy emoji
-  const emoji = CONFIG.ENEMY.emojis[Math.floor(Math.random() * CONFIG.ENEMY.emojis.length)];
+  const type = pickEnemyType(gameState.score);
 
   // Random x position within safe margins
   const x = Math.random() * (canvas.width - CONFIG.ENEMY.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
 
-  // Enemies get tougher as score increases, capped so kill time
-  // stays bounded (egg damage grows much slower than score).
-  // Divisor 150 tuned by playtest: /100 outpaced damage progression.
-  const maxHits = Math.min(
-    Math.floor(gameState.score / 150) + 1,
-    CONFIG.ENEMY.maxToughness
-  );
-
   gameState.enemies.push({
     x, y: -CONFIG.ENEMY.size,
     width: CONFIG.ENEMY.size, height: CONFIG.ENEMY.size,
-    emoji, hits: 0, maxHits
+    emoji: type.emoji, speed: type.speed,
+    hits: 0, maxHits: type.hp,
+    hitFlashUntil: 0
   });
 }
 
