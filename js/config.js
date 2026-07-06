@@ -27,12 +27,29 @@ export const CONFIG = {
   },
 
   /* --- Regular Enemies --- */
+  /* Fixed per-type stats: difficulty grows through spawn composition
+     (phases below), not through stat scaling. HP values are designed
+     in "shots to kill at introduction" against the corn-driven egg
+     damage curve (~2-3 dmg @300, 3-4 @600, 5 @900, 6-7 @1200), so a
+     type naturally softens as the player's damage grows. */
   ENEMY: {
     size: 40,                  // Hitbox width and height (square)
-    baseSpeed: 2,              // Starting fall speed. Increases with score: baseSpeed + floor(score/300)
-    maxSpeed: 8,               // Fall speed cap. Without it enemies outrun the chicken (speed 5, 10 boosted) at high scores
-    maxToughness: 6,           // Enemy HP cap (grows floor(score/100)+1). Keeps far enemies killable in 1-2 volleys late game
-    emojis: ['🦊', '🐺', '🐶', '😼']  // Random emoji assigned to each enemy at spawn
+    types: [
+      { id: 'dog',  emoji: '🐶', speed: 2, hp: 1 },  // baseline
+      { id: 'cat',  emoji: '😼', speed: 5, hp: 2 },  // fast, fragile
+      { id: 'wolf', emoji: '🐺', speed: 2, hp: 10 }, // tank (~3 shots at intro)
+      { id: 'fox',  emoji: '🦊', speed: 4, hp: 12 }  // elite: fast AND tanky
+    ],
+    /* Spawn phases: at each score threshold the weight table changes.
+       Old types are never fully retired (a spawn slot spent on a dog
+       is breathing room, not a difficulty leak). Weights tuned by
+       simulation + playtest. */
+    phases: [
+      { fromScore: 0,   weights: { dog: 100, cat: 0,  wolf: 0,  fox: 0  } },
+      { fromScore: 300, weights: { dog: 60,  cat: 40, wolf: 0,  fox: 0  } },
+      { fromScore: 600, weights: { dog: 30,  cat: 40, wolf: 30, fox: 0  } },
+      { fromScore: 900, weights: { dog: 12,  cat: 30, wolf: 28, fox: 30 } }
+    ]
   },
 
   /* --- Boss Enemy --- */
@@ -88,7 +105,8 @@ export const CONFIG = {
   GAME: {
     maxMissedEnemies: 10,      // Game over if this many enemies pass the bottom
     maxHealth: 10,             // Maximum player HP (also determines health bar segments)
-    scoreBeforeBoss: 1200      // Boss spawns when score reaches this value
+    scoreBeforeBoss: 1200,     // Boss spawns when score reaches this value
+    grassBoostScore: 600       // Grass switches to fast scrolling at this score (was tied to global enemy speed > 4, which no longer exists)
   },
 
   /* --- Power-up Boost Effects --- */
