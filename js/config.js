@@ -46,8 +46,8 @@ export const CONFIG = {
        simulation + playtest. */
     phases: [
       { fromScore: 0,   weights: { dog: 100, cat: 0,  wolf: 0,  fox: 0  } },
-      { fromScore: 300, weights: { dog: 60,  cat: 40, wolf: 0,  fox: 0  } },
-      { fromScore: 600, weights: { dog: 30,  cat: 40, wolf: 30, fox: 0  } },
+      { fromScore: 300, weights: { dog: 50,  cat: 50, wolf: 0,  fox: 0  } },
+      { fromScore: 600, weights: { dog: 15,  cat: 50, wolf: 35, fox: 0  } },
       { fromScore: 900, weights: { dog: 12,  cat: 30, wolf: 28, fox: 30 } }
     ]
   },
