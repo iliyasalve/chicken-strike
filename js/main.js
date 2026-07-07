@@ -145,13 +145,28 @@ function gameLoop(timestamp) {
   drawItems(ctx);
 
   /* --- Wave banner (breather after a boss kill) --- */
+  // Styled like the HTML menus (beige panel, brown text) so it reads
+  // as UI instead of blending into the green field
   if (timestamp < gameState.bannerUntil) {
+    const bannerText = `Wave ${gameState.wave}`;
+    const bx = viewport.width / 2;
+    const by = viewport.height / 2 - 40;
     ctx.save();
     ctx.font = 'bold 48px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(70, 102, 43, 0.9)';   // field border green
-    ctx.fillText(`Wave ${gameState.wave}`, viewport.width / 2, viewport.height / 2 - 40);
+    const bw = ctx.measureText(bannerText).width + 80;
+    const bh = 96;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 25;
+    ctx.shadowOffsetY = 8;
+    ctx.fillStyle = 'rgba(255, 250, 230, 0.95)';  // menu panel beige
+    ctx.beginPath();
+    ctx.roundRect(bx - bw / 2, by - bh / 2, bw, bh, 15);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = '#5e3a00';                    // menu heading brown
+    ctx.fillText(bannerText, bx, by);
     ctx.restore();
   }
 

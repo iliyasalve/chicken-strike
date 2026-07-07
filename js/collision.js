@@ -210,6 +210,9 @@ export function handleCollisions() {
       if (isColliding(egg, gameState.boss)) {
         gameState.boss.health -= gameState.eggDamage;
 
+        // Same hit flash as regular enemies (rendered by drawBoss)
+        gameState.boss.hitFlashUntil = performance.now() + 120;
+
         if (!soundState.sfxMuted) {
           splatSound.play();
         }

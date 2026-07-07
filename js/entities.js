@@ -185,6 +185,8 @@ export function drawEnemies(ctx) {
 /**
  * Draws the boss if it exists.
  * Boss uses a larger font size (80px) than regular enemies.
+ * Hit feedback is the same flash regular enemies use (an HP bar was
+ * tried and rejected — inconsistent with the rest of the game).
  */
 export function drawBoss(ctx) {
   if (!gameState.boss) return;
@@ -192,18 +194,20 @@ export function drawBoss(ctx) {
   const boss = gameState.boss;
   ctx.font = EMOJI_FONT_80;
   ctx.textBaseline = 'top';
-  ctx.fillText(boss.emoji, boss.x, boss.y);
 
-  // Health bar above the boss: the fight is long (15-20 hits) and
-  // moving, so the player needs to see progress
-  const barW = boss.width;
-  const barH = 6;
-  const barY = boss.y - barH - 4;
-  const ratio = Math.max(0, boss.health / boss.maxHealth);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-  ctx.fillRect(boss.x, barY, barW, barH);
-  ctx.fillStyle = ratio > 0.5 ? '#4caf50' : ratio > 0.25 ? '#ffb300' : '#e53935';
-  ctx.fillRect(boss.x, barY, barW * ratio, barH);
+  if (boss.hitFlashUntil > performance.now()) {
+    const cx = boss.x + boss.width / 2;
+    const cy = boss.y + boss.height / 2;
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.translate(cx, cy);
+    ctx.scale(1.15, 1.15);
+    ctx.translate(-cx, -cy);
+    ctx.fillText(boss.emoji, boss.x, boss.y);
+    ctx.restore();
+  } else {
+    ctx.fillText(boss.emoji, boss.x, boss.y);
+  }
 
   drawHitbox(ctx, boss, 'purple');
 }
@@ -446,8 +450,8 @@ export function spawnEnemy(canvas) {
       // HP parity: boss scales with the wave like regular enemies,
       // keeping the fight at 15-20 hits against the grown egg damage
       health: Math.round(CONFIG.BOSS.health * cycleHpMult(gameState.wave)),
-      maxHealth: Math.round(CONFIG.BOSS.health * cycleHpMult(gameState.wave)),
       speed: CONFIG.BOSS.speed,
+      hitFlashUntil: 0,
       emoji: CONFIG.BOSS.emoji,
       // Sweep toward the far side of the screen (spawned left goes
       // right and vice versa), then ping-pongs between the edges
