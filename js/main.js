@@ -138,31 +138,50 @@ function gameLoop(timestamp) {
   drawBoss(ctx);
   drawItems(ctx);
 
-  /* --- Spawn enemies at interval --- */
-  // Interval shrinks with score (density keeps up with faster clears),
-  // then a per-wave multiplier tightens late cycles. Hard floor keeps
-  // the stream readable on mobile.
-  const spawnInterval = Math.max(
-    CONFIG.CYCLE.minInterval,
-    Math.max(
-      CONFIG.SPAWN.minInterval,
-      CONFIG.SPAWN.baseInterval - gameState.score * CONFIG.SPAWN.intervalReduction
-    ) * Math.pow(CONFIG.CYCLE.paceFactor, gameState.wave - 1)
-  );
-  if (timestamp - gameState.lastSpawnTime > spawnInterval) {
-    spawnEnemy(canvas);
-    gameState.lastSpawnTime = timestamp;
+  /* --- Wave banner (breather after a boss kill) --- */
+  if (timestamp < gameState.bannerUntil) {
+    ctx.save();
+    ctx.font = 'bold 48px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(70, 102, 43, 0.9)';   // field border green
+    ctx.fillText(`Wave ${gameState.wave}`, viewport.width / 2, viewport.height / 2 - 40);
+    ctx.restore();
   }
 
-  /* --- Spawn ONE power-up (corn/pepper/wheat) at random interval --- */
-  /* Shared spawner: weighted random pick, so bonuses never flood the
-     screen and the next drop can't be predicted. */
-  if (timestamp - gameState.lastItemSpawnTime > gameState.nextItemInterval) {
-    spawnRandomItem();
+  /* --- Spawning (frozen while the wave banner shows) --- */
+  const inBanner = timestamp < gameState.bannerUntil;
+  if (inBanner) {
+    // Keep timers pinned so the banner doesn't cause a spawn burst after
+    gameState.lastSpawnTime = timestamp;
     gameState.lastItemSpawnTime = timestamp;
-    gameState.nextItemInterval = Math.floor(
-      Math.random() * (CONFIG.ITEM_SPAWN.maxInterval - CONFIG.ITEM_SPAWN.minInterval + 1)
-    ) + CONFIG.ITEM_SPAWN.minInterval;
+  } else {
+    /* --- Spawn enemies at interval --- */
+    // Interval shrinks with score (density keeps up with faster clears),
+    // then a per-wave multiplier tightens late cycles. Hard floor keeps
+    // the stream readable on mobile.
+    const spawnInterval = Math.max(
+      CONFIG.CYCLE.minInterval,
+      Math.max(
+        CONFIG.SPAWN.minInterval,
+        CONFIG.SPAWN.baseInterval - gameState.score * CONFIG.SPAWN.intervalReduction
+      ) * Math.pow(CONFIG.CYCLE.paceFactor, gameState.wave - 1)
+    );
+    if (timestamp - gameState.lastSpawnTime > spawnInterval) {
+      spawnEnemy(canvas);
+      gameState.lastSpawnTime = timestamp;
+    }
+
+    /* --- Spawn ONE power-up (corn/pepper/wheat) at random interval --- */
+    /* Shared spawner: weighted random pick, so bonuses never flood the
+       screen and the next drop can't be predicted. */
+    if (timestamp - gameState.lastItemSpawnTime > gameState.nextItemInterval) {
+      spawnRandomItem();
+      gameState.lastItemSpawnTime = timestamp;
+      gameState.nextItemInterval = Math.floor(
+        Math.random() * (CONFIG.ITEM_SPAWN.maxInterval - CONFIG.ITEM_SPAWN.minInterval + 1)
+      ) + CONFIG.ITEM_SPAWN.minInterval;
+    }
   }
 
   animationFrameId = requestAnimationFrame(gameLoop);
