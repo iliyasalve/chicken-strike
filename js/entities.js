@@ -14,7 +14,7 @@
 /*   🌾 Wheat    — health restore            */
 /* ========================================= */
 
-import { CONFIG } from './config.js';
+import { CONFIG, cycleHpMult } from './config.js';
 import { gameState, chickenPermSpeed, viewport } from './state.js';
 import { setGrassState } from './ui.js';
 
@@ -175,7 +175,7 @@ export function drawBoss(ctx) {
   const barW = boss.width;
   const barH = 6;
   const barY = boss.y - barH - 4;
-  const ratio = Math.max(0, boss.health / CONFIG.BOSS.health);
+  const ratio = Math.max(0, boss.health / boss.maxHealth);
   ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
   ctx.fillRect(boss.x, barY, barW, barH);
   ctx.fillStyle = ratio > 0.5 ? '#4caf50' : ratio > 0.25 ? '#ffb300' : '#e53935';
@@ -345,15 +345,17 @@ export function updateItems(canvas, dtFactor = 1) {
 /* ========================================= */
 
 /**
- * Picks an enemy type for the current score using the active spawn
- * phase's weight table. Phases are sorted by fromScore; the last
- * phase whose threshold is reached wins.
+ * Picks an enemy type using the spawn-phase weight table. Phase index
+ * is driven by progress within the current cycle, shifted up by one
+ * per completed wave: wave 2 starts at the dog/cat mix, wave 4+ runs
+ * the final mix from the first second.
  */
-function pickEnemyType(score) {
-  let phase = CONFIG.ENEMY.phases[0];
-  for (const p of CONFIG.ENEMY.phases) {
-    if (score >= p.fromScore) phase = p;
-  }
+function pickEnemyType() {
+  const progress = gameState.score - gameState.cycleStartScore;
+  let base = 0;
+  CONFIG.ENEMY.phases.forEach((p, i) => { if (progress >= p.fromScore) base = i; });
+  const idx = Math.min(CONFIG.ENEMY.phases.length - 1, base + (gameState.wave - 1));
+  const phase = CONFIG.ENEMY.phases[idx];
 
   const entries = CONFIG.ENEMY.types
     .map(t => [t, phase.weights[t.id] || 0])
@@ -372,9 +374,9 @@ function pickEnemyType(score) {
  * Spawns a regular enemy or triggers boss.
  *
  * Boss spawn conditions:
- *   - Score >= scoreBeforeBoss
+ *   - Score >= nextBossScore (per-cycle threshold)
  *   - No boss currently active
- *   - Boss not already spawned this round
+ *   - Boss not already spawned this cycle
  *
  * If boss is active or was spawned, no regular
  * enemies spawn until boss fight ends.
@@ -384,14 +386,17 @@ function pickEnemyType(score) {
  */
 export function spawnEnemy(canvas) {
   // Check if it's time to spawn the boss
-  if (gameState.score >= CONFIG.GAME.scoreBeforeBoss && !gameState.boss && !gameState.bossSpawned) {
+  if (gameState.score >= gameState.nextBossScore && !gameState.boss && !gameState.bossSpawned) {
     const bossX = Math.random() * (viewport.width - CONFIG.BOSS.size);
     gameState.boss = {
       x: bossX,
       y: -CONFIG.BOSS.size,
       width: CONFIG.BOSS.size,
       height: CONFIG.BOSS.size,
-      health: CONFIG.BOSS.health,
+      // HP parity: boss scales with the wave like regular enemies,
+      // keeping the fight at 15-20 hits against the grown egg damage
+      health: Math.round(CONFIG.BOSS.health * cycleHpMult(gameState.wave)),
+      maxHealth: Math.round(CONFIG.BOSS.health * cycleHpMult(gameState.wave)),
       speed: CONFIG.BOSS.speed,
       emoji: CONFIG.BOSS.emoji,
       // Sweep toward the far side of the screen (spawned left goes
@@ -405,7 +410,7 @@ export function spawnEnemy(canvas) {
   // Don't spawn regular enemies during boss fight
   if (gameState.boss || gameState.bossSpawned) return;
 
-  const type = pickEnemyType(gameState.score);
+  const type = pickEnemyType();
 
   // Random x position within safe margins
   const x = Math.random() * (viewport.width - CONFIG.ENEMY.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
@@ -414,7 +419,7 @@ export function spawnEnemy(canvas) {
     x, y: -CONFIG.ENEMY.size,
     width: CONFIG.ENEMY.size, height: CONFIG.ENEMY.size,
     emoji: type.emoji, speed: type.speed,
-    hits: 0, maxHits: type.hp,
+    hits: 0, maxHits: Math.round(type.hp * cycleHpMult(gameState.wave)),
     hitFlashUntil: 0
   });
 }
