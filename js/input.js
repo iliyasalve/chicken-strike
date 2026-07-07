@@ -21,6 +21,7 @@
 
 import { gameState } from './state.js';
 import { CONFIG } from './config.js';
+import { spawnEgg } from './entities.js';
 import { soundState, eggPopSound } from './music.js';
 import { showPause, hidePause, setGrassState } from './ui.js';
 
@@ -136,13 +137,11 @@ function handleShoot() {
 
   // Enforce cooldown between shots
   if (now - gameState.lastShotTime > CONFIG.EGG.cooldown) {
-    // Spawn egg centered above the chicken
-    gameState.eggs.push({
-      x: gameState.chicken.x + gameState.chicken.width / 2 - CONFIG.EGG.radius,
-      y: gameState.chicken.y,
-      width: CONFIG.EGG.radius * 2,
-      height: CONFIG.EGG.radius * 2
-    });
+    // Spawn egg centered above the chicken (pooled, SCALE-3)
+    spawnEgg(
+      gameState.chicken.x + gameState.chicken.width / 2 - CONFIG.EGG.radius,
+      gameState.chicken.y
+    );
 
     gameState.lastShotTime = now;
 
