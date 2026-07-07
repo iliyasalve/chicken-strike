@@ -105,6 +105,12 @@ function gameLoop(timestamp) {
     if (gameState.speedBoostActive) {
       gameState.speedBoostEndTime += pausedDelta;
     }
+    // Active wave banner survives the pause too. Only shifted while
+    // active: pushing an expired timestamp forward could resurrect
+    // the banner (and its spawn freeze) after a long pause.
+    if (gameState.bannerUntil > timestamp) {
+      gameState.bannerUntil += pausedDelta;
+    }
 
     // Keep the frame clock current so unpausing doesn't produce
     // a huge dt (entities would jump on resume otherwise)
