@@ -157,14 +157,18 @@ function gameLoop(timestamp) {
     gameState.lastItemSpawnTime = timestamp;
   } else {
     /* --- Spawn enemies at interval --- */
-    // Interval shrinks with score (density keeps up with faster clears),
-    // then a per-wave multiplier tightens late cycles. Hard floor keeps
-    // the stream readable on mobile.
+    // Density is driven by progress WITHIN the current wave, so every
+    // wave restarts as a slow trickle and ramps up toward its boss
+    // (a global-score density never resets and made wave 2+ start at
+    // the max-pace firehose — sim-verified unwinnable). The per-wave
+    // paceFactor then tightens the whole curve each wave; the hard
+    // floor keeps the stream readable on mobile.
+    const waveProgress = gameState.score - gameState.cycleStartScore;
     const spawnInterval = Math.max(
       CONFIG.CYCLE.minInterval,
       Math.max(
         CONFIG.SPAWN.minInterval,
-        CONFIG.SPAWN.baseInterval - gameState.score * CONFIG.SPAWN.intervalReduction
+        CONFIG.SPAWN.baseInterval - waveProgress * CONFIG.SPAWN.intervalReduction
       ) * Math.pow(CONFIG.CYCLE.paceFactor, gameState.wave - 1)
     );
     if (timestamp - gameState.lastSpawnTime > spawnInterval) {
