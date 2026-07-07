@@ -28,7 +28,11 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN"); // optional
 
 // --- Anti-cheat tuning (rate-based, endless-mode safe) ---
-const RATE = 30;   // max plausible points per real second
+// Endless mode: Monte-Carlo sim peaks at 22 pts/s over any 60s window
+// (ideal bot, boss bonus included); RATE = ceil(22 * 1.5) headroom.
+// Repeated boss bursts are >= 40s apart, covered by RATE; BASE absorbs
+// a single burst on top.
+const RATE = 33;   // max plausible points per real second
 const BASE = 700;  // absorbs the +500 boss-kill burst + slack
 const MAX_SESSION_SECONDS = 86400;
 const TG_INITDATA_MAX_AGE = 86400; // reject replayed old initData
