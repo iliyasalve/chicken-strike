@@ -139,11 +139,15 @@ function gameLoop(timestamp) {
   drawItems(ctx);
 
   /* --- Spawn enemies at interval --- */
-  // Interval shrinks with score: faster enemies leave the screen sooner,
-  // so without this the on-screen density (and perceived difficulty) drops.
+  // Interval shrinks with score (density keeps up with faster clears),
+  // then a per-wave multiplier tightens late cycles. Hard floor keeps
+  // the stream readable on mobile.
   const spawnInterval = Math.max(
-    CONFIG.SPAWN.minInterval,
-    CONFIG.SPAWN.baseInterval - gameState.score * CONFIG.SPAWN.intervalReduction
+    CONFIG.CYCLE.minInterval,
+    Math.max(
+      CONFIG.SPAWN.minInterval,
+      CONFIG.SPAWN.baseInterval - gameState.score * CONFIG.SPAWN.intervalReduction
+    ) * Math.pow(CONFIG.CYCLE.paceFactor, gameState.wave - 1)
   );
   if (timestamp - gameState.lastSpawnTime > spawnInterval) {
     spawnEnemy(canvas);
