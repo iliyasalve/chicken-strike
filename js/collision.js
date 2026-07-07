@@ -13,7 +13,11 @@ import { CONFIG } from './config.js';
 import { gameState, chickenPermSpeed, startNextWave } from './state.js';
 import { updateUI, setGrassState } from './ui.js';
 import { removeAt, releaseEgg, releaseEnemy, releaseItem } from './entities.js';
+import { resetGrid, insertGrid, queryGrid } from './spatial.js';
 import { soundState, splatSound, damageSound, chickenEatSound, victorySound } from '../js/music.js';
+
+/* Reused query output (SCALE-3: no per-frame allocation) */
+const candidates = [];
 
 /* ========================================= */
 /* AABB COLLISION CHECK                      */
@@ -43,17 +47,24 @@ function isColliding(a, b) {
 
 export function handleCollisions() {
 
+  /* --- Broad phase: enemies into the grid once per frame (SCALE-4) --- */
+  resetGrid();
+  for (const enemy of gameState.enemies) insertGrid(enemy);
+
   /* ----------------------------------------- */
   /* EGGS vs ENEMIES                           */
   /* Each egg deals eggDamage to enemy.         */
   /* Enemy dies when hits >= maxHits.            */
   /* Score +10 per enemy killed.                */
+  /* Grid narrows each egg to enemies sharing  */
+  /* a cell; exact check stays isColliding.    */
   /* ----------------------------------------- */
 
-  gameState.enemies.forEach(enemy => {
-    gameState.eggs.forEach(egg => {
-      // Skip already-marked objects
-      if (egg.dead || enemy.dead) return;
+  for (const egg of gameState.eggs) {
+    if (egg.dead) continue;
+
+    for (const enemy of queryGrid(egg, candidates)) {
+      if (enemy.dead) continue;
 
       if (isColliding(egg, enemy)) {
         enemy.hits += gameState.eggDamage;
@@ -74,16 +85,24 @@ export function handleCollisions() {
           enemy.dead = true;
           gameState.score += 10;
         }
+
+        break; // egg consumed, stop scanning candidates
       }
-    });
+    }
+  }
 
-    /* ----------------------------------------- */
-    /* CHICKEN vs ENEMIES                        */
-    /* Direct contact deals 1 HP damage.          */
-    /* Game over if health reaches 0.             */
-    /* ----------------------------------------- */
+  /* ----------------------------------------- */
+  /* CHICKEN vs ENEMIES                        */
+  /* Direct contact deals 1 HP damage.          */
+  /* Game over if health reaches 0.             */
+  /* Enemies killed by an egg this frame are   */
+  /* skipped (dead flag), as before.           */
+  /* ----------------------------------------- */
 
-    if (!enemy.dead && isColliding(gameState.chicken, enemy)) {
+  for (const enemy of queryGrid(gameState.chicken, candidates)) {
+    if (enemy.dead) continue;
+
+    if (isColliding(gameState.chicken, enemy)) {
       enemy.dead = true;
       gameState.health--;
 
@@ -97,7 +116,7 @@ export function handleCollisions() {
         setGrassState('static');
       }
     }
-  });
+  }
 
   /* ----------------------------------------- */
   /* CHICKEN vs CORN (power-up)                */
