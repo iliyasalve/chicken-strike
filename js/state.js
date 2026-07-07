@@ -70,6 +70,12 @@ export const gameState = {
   /* --- Boss tracking --- */
   bossSpawned: false,                // True after boss has been created (prevents re-spawn)
 
+  /* --- Endless waves --- */
+  wave: 1,                           // Current wave number (bosses killed + 1)
+  nextBossScore: CONFIG.GAME.scoreBeforeBoss,  // Boss spawns when score reaches this
+  cycleStartScore: 0,                // Score at the start of the current cycle (phase progress base)
+  bannerUntil: 0,                    // performance.now() until which the "Wave N" banner shows
+
   /* --- Speed boost (from corn) --- */
   speedBoostActive: false,           // True while boost is active
   speedBoostEndTime: 0,              // Timestamp when boost expires
@@ -95,6 +101,23 @@ export const gameState = {
  */
 export function chickenPermSpeed() {
   return CONFIG.CHICKEN.speed + gameState.speedLevel * CONFIG.CHICKEN.speedIncrease;
+}
+
+/**
+ * Boss killed: advance to the next wave. The +500 boss bonus is already
+ * in gameState.score, so basing nextBossScore on the current score keeps
+ * every cycle exactly CYCLE.length points of real play (score % length
+ * would let the bonus eat 500 points of next-cycle progress).
+ * Killing the boss also lets the hens rebuild part of the coop:
+ * the missed-enemy budget gets missRepair back (never below 0 missed).
+ */
+export function startNextWave(now) {
+  gameState.wave++;
+  gameState.nextBossScore = gameState.score + CONFIG.CYCLE.length;
+  gameState.cycleStartScore = gameState.score;
+  gameState.bossSpawned = false;
+  gameState.missedEnemies = Math.max(0, gameState.missedEnemies - CONFIG.CYCLE.missRepair);
+  gameState.bannerUntil = now + CONFIG.CYCLE.bannerDuration;
 }
 
 /* ========================================= */
@@ -154,6 +177,12 @@ export function resetGameState(canvas) {
 
     /* --- Reset boss tracking --- */
     bossSpawned: false,
+
+    /* --- Reset endless waves --- */
+    wave: 1,
+    nextBossScore: CONFIG.GAME.scoreBeforeBoss,
+    cycleStartScore: 0,
+    bannerUntil: 0,
 
     /* --- Reset speed boost --- */
     speedBoostActive: false,

@@ -110,6 +110,23 @@ export const CONFIG = {
     grassBoostScore: 600       // Grass switches to fast scrolling at this score (was tied to global enemy speed > 4, which no longer exists)
   },
 
+  /* --- Endless Cycles (Waves) --- */
+  /* After each boss kill the game continues: wave counter increments,
+     difficulty scales via pace/mix/HP-parity (enemy SPEEDS are never
+     scaled — they sit at the dodgeability limit). See spec
+     2026-07-07-endless-waves-design.md. */
+  CYCLE: {
+    length: 1200,            // Real-play score per cycle: next boss at (score after kill) + length
+    bannerDuration: 2500,    // "Wave N" banner time (ms); enemy/item spawns frozen meanwhile
+    missRepair: 2,           // Missed-enemy budget restored per boss kill (hens rebuild the coop)
+    paceFactor: 0.92,        // Spawn-interval multiplier per completed cycle  ⚠️ sim-calibrated
+    minInterval: 350,        // Hard interval floor in late cycles (~3 spawns/s readability cap) ⚠️ sim-calibrated
+    /* HP parity: keeps "shots to kill" roughly constant against the
+       corn-driven damage curve. hpMultipliers[k] applies to wave k+1;
+       past the table the last step is extended linearly. ⚠️ sim-calibrated */
+    hpMultipliers: [1, 2, 3.5, 5, 6.5, 8]
+  },
+
   /* --- Power-up Boost Effects --- */
   BOOST: {
     duration: 5000,            // Temporary speed boost duration (5 seconds), granted by pepper
@@ -122,3 +139,14 @@ export const CONFIG = {
     // the temporary x2 boost on every pickup.
   }
 };
+
+/**
+ * HP multiplier for a wave. Table lookup; beyond the table the last
+ * step is extended linearly so late waves keep scaling.
+ */
+export function cycleHpMult(wave) {
+  const t = CONFIG.CYCLE.hpMultipliers;
+  if (wave <= t.length) return t[wave - 1];
+  const step = t[t.length - 1] - t[t.length - 2];
+  return t[t.length - 1] + step * (wave - t.length);
+}
