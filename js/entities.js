@@ -372,9 +372,9 @@ function pickEnemyType(score) {
  * Spawns a regular enemy or triggers boss.
  *
  * Boss spawn conditions:
- *   - Score >= scoreBeforeBoss
+ *   - Score >= nextBossScore (per-cycle threshold)
  *   - No boss currently active
- *   - Boss not already spawned this round
+ *   - Boss not already spawned this cycle
  *
  * If boss is active or was spawned, no regular
  * enemies spawn until boss fight ends.
@@ -384,7 +384,7 @@ function pickEnemyType(score) {
  */
 export function spawnEnemy(canvas) {
   // Check if it's time to spawn the boss
-  if (gameState.score >= CONFIG.GAME.scoreBeforeBoss && !gameState.boss && !gameState.bossSpawned) {
+  if (gameState.score >= gameState.nextBossScore && !gameState.boss && !gameState.bossSpawned) {
     const bossX = Math.random() * (viewport.width - CONFIG.BOSS.size);
     gameState.boss = {
       x: bossX,

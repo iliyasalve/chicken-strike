@@ -23,7 +23,7 @@ import {
   deleteByDeviceId, hasConsent, setConsent, isUsernameTaken, getUserId,
   startGameSession
 } from './leaderboard.js';
-import { soundState, gameOverSound, victorySound, unlockAudio } from '../js/music.js';
+import { soundState, gameOverSound, unlockAudio } from '../js/music.js';
 
 /* ========================================= */
 /* CANVAS SETUP                              */
@@ -82,16 +82,9 @@ function gameLoop(timestamp) {
     showGameOver(gameState.gameOverReason || 'Game Over!');
     showGameOverStats();
 
-    if (gameState.isVictory) {
-      if (!soundState.victorySoundPlayed && !soundState.sfxMuted) {
-        victorySound.play();
-        soundState.victorySoundPlayed = true;
-      }
-    } else {
-      if (!soundState.gameOverSoundPlayed && !soundState.sfxMuted) {
-        gameOverSound.play();
-        soundState.gameOverSoundPlayed = true;
-      }
+    if (!soundState.gameOverSoundPlayed && !soundState.sfxMuted) {
+      gameOverSound.play();
+      soundState.gameOverSoundPlayed = true;
     }
 
     loadGameOverLeaderboard();
@@ -343,7 +336,6 @@ function startGame() {
   // Fire-and-forget: the token arrives long before the game ends.
   startGameSession();
   soundState.gameOverSoundPlayed = false;
-  soundState.victorySoundPlayed = false;
   gameState.startTime = Date.now();
   hideStartMenu();
   hideGameOver();

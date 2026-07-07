@@ -10,9 +10,9 @@
 /* ========================================= */
 
 import { CONFIG } from './config.js';
-import { gameState, chickenPermSpeed } from './state.js';
+import { gameState, chickenPermSpeed, startNextWave } from './state.js';
 import { updateUI, setGrassState } from './ui.js';
-import { soundState, splatSound, damageSound, chickenEatSound } from '../js/music.js';
+import { soundState, splatSound, damageSound, chickenEatSound, victorySound } from '../js/music.js';
 
 /* ========================================= */
 /* AABB COLLISION CHECK                      */
@@ -186,7 +186,7 @@ export function handleCollisions() {
   /* ----------------------------------------- */
   /* EGGS vs BOSS                              */
   /* Boss takes eggDamage per hit.              */
-  /* Boss death = +500 score + victory screen.  */
+  /* Boss death = +500 score + next wave.       */
   /* Guard: if boss dies mid-loop from one egg, */
   /* remaining eggs skip via null check.        */
   /* ----------------------------------------- */
@@ -203,14 +203,14 @@ export function handleCollisions() {
           splatSound.play();
         }
 
-        // Check if boss is defeated
+        // Boss defeated: +500 and the game continues — next wave
         if (gameState.boss.health <= 0) {
           gameState.boss = null;
           gameState.score += 500;
-          gameState.gameOver = true;
-          gameState.gameOverReason = 'Victory! The Chicken defeated the boss!';
-          gameState.isVictory = true;
-          setGrassState('static');
+          startNextWave(performance.now());
+          if (!soundState.sfxMuted) {
+            victorySound.play();
+          }
         }
 
         return false; // Remove egg

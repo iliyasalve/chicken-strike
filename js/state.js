@@ -64,7 +64,6 @@ export const gameState = {
   /* --- Game flow --- */
   gameOver: false,                   // True when game has ended
   gameOverReason: '',                // Text shown on game over screen
-  isVictory: false,                  // True if game ended by defeating boss
   paused: false,                     // True when game is paused
 
   /* --- Boss tracking --- */
@@ -172,7 +171,6 @@ export function resetGameState(canvas) {
     /* --- Reset game flow --- */
     gameOver: false,
     gameOverReason: '',
-    isVictory: false,
     paused: false,
 
     /* --- Reset boss tracking --- */
