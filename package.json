@@ -1,0 +1,10 @@
+{
+  "name": "chicken-strike",
+  "version": "1.0.0",
+  "description": "Chicken Strike — vanilla JS canvas game. Unit tests for pure logic modules.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
