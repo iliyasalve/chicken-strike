@@ -14,7 +14,7 @@
 /*   🌾 Wheat    — health restore            */
 /* ========================================= */
 
-import { CONFIG, cycleHpMult } from './config.js';
+import { CONFIG, cycleHpMult, patternChance, zigzagAmp, diveMult } from './config.js';
 import { gameState, chickenPermSpeed, viewport } from './state.js';
 import { setGrassState } from './ui.js';
 
@@ -312,9 +312,23 @@ export function updateEnemies(canvas, dtFactor = 1) {
     setGrassState('moving');
   }
 
+  const zigPeriod = CONFIG.PATTERN.zigzag.period;
+  const diveTrigger = CONFIG.PATTERN.dive.trigger * viewport.height;
+
   for (let i = gameState.enemies.length - 1; i >= 0; i--) {
     const e = gameState.enemies[i];
-    e.y += e.speed * dtFactor;
+
+    // Vertical fall. Dive enemies accelerate once past the trigger line.
+    const vScale = (e.pattern === 'dive' && e.y > diveTrigger) ? e.diveMult : 1;
+    e.y += e.speed * dtFactor * vScale;
+
+    // Zigzag enemies sway horizontally around their spawn column.
+    if (e.pattern === 'zigzag') {
+      e.ageSec += dtFactor / 60;   // dtFactor is 1 @60fps → seconds elapsed
+      const sway = e.spawnX + e.amp * Math.sin((2 * Math.PI * e.ageSec) / zigPeriod);
+      // Keep the hitbox fully on the field so edge enemies stay hittable
+      e.x = Math.max(0, Math.min(viewport.width - e.width, sway));
+    }
 
     // Enemy passed the bottom edge
     if (e.y > viewport.height) {
@@ -471,6 +485,15 @@ export function spawnEnemy(canvas) {
 
   // Reuse a pooled enemy: EVERY field is reassigned (pooled objects
   // keep stale values from their previous life)
+  // Roll a movement pattern. Eligible types (dog/wolf) carry exactly one
+  // non-straight option; from wave 2 it wins with patternChance(wave).
+  let pattern = 'straight';
+  if (type.patterns.length > 1 && Math.random() < patternChance(gameState.wave)) {
+    pattern = type.patterns[1];
+  }
+
+  // Reuse a pooled enemy: EVERY field is reassigned (pooled objects
+  // keep stale values from their previous life)
   const enemy = enemyPool.pop() || {};
   enemy.x = x;
   enemy.y = -CONFIG.ENEMY.size;
@@ -482,6 +505,12 @@ export function spawnEnemy(canvas) {
   enemy.maxHits = Math.round(type.hp * cycleHpMult(gameState.wave));
   enemy.hitFlashUntil = 0;
   enemy.dead = false;
+  // Pattern state (reassigned unconditionally — pooled objects are stale)
+  enemy.pattern = pattern;
+  enemy.spawnX = x;                              // zigzag oscillates around this
+  enemy.ageSec = 0;                              // seconds alive, drives zigzag phase
+  enemy.amp = pattern === 'zigzag' ? zigzagAmp(gameState.wave) : 0;
+  enemy.diveMult = pattern === 'dive' ? diveMult(gameState.wave) : 1;
   gameState.enemies.push(enemy);
 }
 
