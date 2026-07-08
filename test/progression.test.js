@@ -33,3 +33,8 @@ test('triangularLevel: is monotonic non-decreasing', () => {
     prev = lvl;
   }
 });
+
+test('triangularLevel: negative input is level 0 (robustness)', () => {
+  assert.equal(triangularLevel(-1), 0);
+  assert.equal(triangularLevel(-100), 0);
+});

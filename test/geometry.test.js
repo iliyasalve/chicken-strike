@@ -42,3 +42,31 @@ test('isColliding: is symmetric', () => {
   const b = box(15, 15, 30, 30);
   assert.equal(isColliding(a, b), isColliding(b, a));
 });
+
+test('isColliding: works with negative coordinates (enemies spawn at y<0)', () => {
+  // enemy just spawned above the top edge, chicken near it
+  assert.equal(isColliding(box(-40, -40, 40, 40), box(-20, -20, 40, 40)), true);
+  assert.equal(isColliding(box(-40, -40, 40, 40), box(-40, 40, 40, 40)), false);
+});
+
+test('isColliding: diagonally separated boxes do not collide', () => {
+  assert.equal(isColliding(box(0, 0), box(20, 20)), false);
+});
+
+test('isColliding: x-ranges overlap but y-ranges do not -> no collision', () => {
+  // the classic AABB trap: sharing one axis is not enough
+  assert.equal(isColliding(box(0, 0, 100, 10), box(50, 50, 100, 10)), false);
+});
+
+test('isColliding: y-ranges overlap but x-ranges do not -> no collision', () => {
+  assert.equal(isColliding(box(0, 0, 10, 100), box(50, 50, 10, 100)), false);
+});
+
+test('isColliding: asymmetric width/height boxes overlap correctly', () => {
+  assert.equal(isColliding(box(0, 0, 200, 5), box(100, 2, 5, 5)), true);
+});
+
+test('isColliding: b positioned left/above a still detected', () => {
+  // ensure detection is not order/direction dependent
+  assert.equal(isColliding(box(50, 50, 20, 20), box(40, 40, 20, 20)), true);
+});
