@@ -56,9 +56,8 @@ export const gameState = {
   /* --- Player stats --- */
   health: CONFIG.GAME.maxHealth,     // Current HP (max 10)
   eggDamage: 1,                      // Damage per egg (+1 per corn collected)
-  speedLevel: 0,                     // Permanent chicken speed level (increased by pepper, capped)
-  peppersTowardNextSpeed: 0,         // Peppers collected toward the next speed level-up
-  nextSpeedCost: 1,                  // Peppers required for the next +1 speed (grows by 1 each level-up)
+  speedLevel: 0,                     // Permanent chicken speed level (derived: min(cap, triangularLevel(peppersCollected)))
+  peppersCollected: 0,               // Total peppers collected (drives the triangular speed curve)
   missedEnemies: 0,                  // Count of enemies that passed the screen
 
   /* --- Game flow --- */
@@ -164,8 +163,7 @@ export function resetGameState(canvas) {
     health: CONFIG.GAME.maxHealth,
     eggDamage: 1,
     speedLevel: 0,
-    peppersTowardNextSpeed: 0,
-    nextSpeedCost: 1,
+    peppersCollected: 0,
     missedEnemies: 0,
 
     /* --- Reset game flow --- */

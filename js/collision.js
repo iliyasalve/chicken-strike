@@ -14,26 +14,12 @@ import { gameState, chickenPermSpeed, startNextWave } from './state.js';
 import { updateUI, setGrassState } from './ui.js';
 import { removeAt, releaseEgg, releaseEnemy, releaseItem } from './entities.js';
 import { resetGrid, insertGrid, queryGrid } from './spatial.js';
+import { isColliding } from './geometry.js';
+import { triangularLevel } from './progression.js';
 import { soundState, splatSound, damageSound, chickenEatSound, victorySound } from '../js/music.js';
 
 /* Reused query output (SCALE-3: no per-frame allocation) */
 const candidates = [];
-
-/* ========================================= */
-/* AABB COLLISION CHECK                      */
-/* Axis-Aligned Bounding Box test.           */
-/* Returns true if two rectangles overlap.   */
-/* Both objects must have: x, y, width, height */
-/* ========================================= */
-
-function isColliding(a, b) {
-  return (
-    a.x < b.x + b.width &&
-    a.x + a.width > b.x &&
-    a.y < b.y + b.height &&
-    a.y + a.height > b.y
-  );
-}
 
 /* ========================================= */
 /* MAIN COLLISION HANDLER                    */
@@ -170,15 +156,14 @@ export function handleCollisions() {
 
   for (let i = gameState.peppers.length - 1; i >= 0; i--) {
     if (isColliding(gameState.chicken, gameState.peppers[i])) {
-      // Triangular permanent speed progression (hard cap)
-      if (gameState.speedLevel < CONFIG.CHICKEN.maxSpeedLevel) {
-        gameState.peppersTowardNextSpeed++;
-        if (gameState.peppersTowardNextSpeed >= gameState.nextSpeedCost) {
-          gameState.speedLevel++;
-          gameState.peppersTowardNextSpeed = 0;
-          gameState.nextSpeedCost++;
-        }
-      }
+      // Triangular permanent speed progression (hard cap). speedLevel is
+      // derived from the running total: level L costs L peppers, so the
+      // Nth level unlocks at 1+2+...+N total (triangular numbers 1,3,6,...).
+      gameState.peppersCollected++;
+      gameState.speedLevel = Math.min(
+        CONFIG.CHICKEN.maxSpeedLevel,
+        triangularLevel(gameState.peppersCollected)
+      );
 
       // Temporary boost on every pickup (applies on top of perm speed)
       gameState.speedBoostActive = true;
