@@ -24,6 +24,7 @@ import {
   startGameSession
 } from './leaderboard.js';
 import { soundState, gameOverSound, unlockAudio } from '../js/music.js';
+import { escapeHtml } from './sanitize.js';
 
 /* ========================================= */
 /* CANVAS SETUP                              */
@@ -252,25 +253,6 @@ function showGameOverStats() {
 /*   2. In-game mini sidebar (3 or 10)       */
 /*   3. Full modal from menu (top 100)       */
 /* ========================================= */
-
-/**
- * Escapes HTML-special characters to prevent stored XSS.
- * Usernames come from the database (user-controlled) and are
- * injected into innerHTML templates below. Without escaping,
- * a name like `<img src=x onerror=...>` would execute for
- * everyone who views the leaderboard.
- * @param {*} value - Raw value (coerced to string)
- * @returns {string} Safe-to-inject string
- */
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, ch => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  }[ch]));
-}
 
 /**
  * Loads top 3 players into the game over screen table.
