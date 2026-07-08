@@ -34,11 +34,16 @@ export const CONFIG = {
      type naturally softens as the player's damage grows. */
   ENEMY: {
     size: 40,                  // Hitbox width and height (square)
+    /* `patterns` lists the movement styles a type can spawn with. From
+       wave 2 a spawn rolls one at random (see PATTERN below); the first
+       entry ('straight') stays the fallback. Patterns live only on the
+       SLOW types (dog/wolf) — on the fast ones (cat/fox) the challenge is
+       already raw speed, so weaving/lunging on top would be unfair. */
     types: [
-      { id: 'dog',  emoji: '🐶', speed: 2, hp: 1 },  // baseline
-      { id: 'cat',  emoji: '😼', speed: 5, hp: 2 },  // fast, fragile
-      { id: 'wolf', emoji: '🐺', speed: 2, hp: 10 }, // tank (~3 shots at intro)
-      { id: 'fox',  emoji: '🦊', speed: 4, hp: 12 }  // elite: fast AND tanky
+      { id: 'dog',  emoji: '🐶', speed: 2, hp: 1,  patterns: ['straight', 'zigzag'] }, // baseline, weaves
+      { id: 'cat',  emoji: '😼', speed: 5, hp: 2,  patterns: ['straight'] },            // fast, fragile
+      { id: 'wolf', emoji: '🐺', speed: 2, hp: 10, patterns: ['straight', 'dive'] },   // tank (~3 shots at intro), lunges
+      { id: 'fox',  emoji: '🦊', speed: 4, hp: 12, patterns: ['straight'] }             // elite: fast AND tanky
     ],
     /* Spawn phases: at each score threshold the weight table changes.
        Old types are never fully retired (a spawn slot spent on a dog
@@ -50,6 +55,33 @@ export const CONFIG = {
       { fromScore: 600, weights: { dog: 15,  cat: 50, wolf: 35, fox: 0  } },
       { fromScore: 900, weights: { dog: 12,  cat: 30, wolf: 28, fox: 30 } }
     ]
+  },
+
+  /* --- Enemy Movement Patterns --- */
+  /* Wave 1 is always straight (teaches the base loop). From wave 2 each
+     eligible spawn (dog/wolf) rolls `chance` to move on its pattern
+     instead of straight; the pattern's intensity also ramps per wave.
+     Sim-verified balance-NEUTRAL at these numbers (death-wave median
+     unchanged vs all-straight) — this is variety/juice, not a
+     difficulty knob. See AUDIT.md BAL-4/SCALE-1. */
+  PATTERN: {
+    fromWave: 2,               // Patterns start here; wave 1 stays all-straight
+    // chance = min(chanceMax, chanceBase + chanceStep*(wave-fromWave))
+    chanceBase: 0.25,          // Share of eligible spawns on a pattern at wave 2
+    chanceStep: 0.15,          // +15pp per wave
+    chanceMax: 0.80,           // Cap: some spawns always stay straight (breathing room)
+    zigzag: {
+      period: 1.2,             // Seconds per full left-right cycle
+      ampBase: 50,             // Horizontal sway (px) at wave 2
+      ampStep: 12,             // +px per wave
+      ampMax: 100              // Cap (kept within chicken's reach)
+    },
+    dive: {
+      trigger: 0.6,            // Accelerate once the enemy passes 60% of the field height
+      multBase: 2.0,           // Vertical speed multiplier during the lunge at wave 2
+      multStep: 0.3,           // +per wave
+      multMax: 3.5             // Cap
+    }
   },
 
   /* --- Boss Enemy --- */
@@ -149,4 +181,25 @@ export function cycleHpMult(wave) {
   if (wave <= t.length) return t[wave - 1];
   const step = t[t.length - 1] - t[t.length - 2];
   return t[t.length - 1] + step * (wave - t.length);
+}
+
+/* --- Movement-pattern ramp (all clamp at wave < fromWave to the base) --- */
+
+/** Chance an eligible enemy spawns on its pattern (0 before fromWave). */
+export function patternChance(wave) {
+  const p = CONFIG.PATTERN;
+  if (wave < p.fromWave) return 0;
+  return Math.min(p.chanceMax, p.chanceBase + p.chanceStep * (wave - p.fromWave));
+}
+
+/** Zigzag horizontal amplitude (px) for a wave. */
+export function zigzagAmp(wave) {
+  const z = CONFIG.PATTERN.zigzag;
+  return Math.min(z.ampMax, z.ampBase + z.ampStep * (wave - CONFIG.PATTERN.fromWave));
+}
+
+/** Dive vertical-speed multiplier for a wave. */
+export function diveMult(wave) {
+  const d = CONFIG.PATTERN.dive;
+  return Math.min(d.multMax, d.multBase + d.multStep * (wave - CONFIG.PATTERN.fromWave));
 }
