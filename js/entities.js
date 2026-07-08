@@ -14,7 +14,7 @@
 /*   🌾 Wheat    — health restore            */
 /* ========================================= */
 
-import { CONFIG } from './config.js';
+import { CONFIG, cycleHpMult, patternChance, zigzagAmp, diveMult } from './config.js';
 import { gameState, chickenPermSpeed, viewport } from './state.js';
 import { setGrassState } from './ui.js';
 
@@ -47,6 +47,30 @@ const EMOJI_FONT_80 = '80px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color E
   glyphs.forEach(g => offCtx.fillText(g, 0, 60));
   offCtx.font = EMOJI_FONT_80;
   offCtx.fillText(CONFIG.BOSS.emoji, 0, 100);
+}
+
+/* ========================================= */
+/* OBJECT POOLS (SCALE-3)                    */
+/* Dead entities go back to a free-list and  */
+/* get reused by the next spawn, so steady-  */
+/* state gameplay allocates nothing per      */
+/* frame (GC pauses showed up as micro-      */
+/* freezes on low-end mobiles).              */
+/* ========================================= */
+
+const eggPool = [];
+const enemyPool = [];
+const itemPool = [];   // corn/wheat/pepper share a shape
+
+export function releaseEgg(e)   { eggPool.push(e); }
+export function releaseEnemy(e) { enemyPool.push(e); }
+export function releaseItem(i)  { itemPool.push(i); }
+
+/** Swap-remove arr[i] (order doesn't matter for rendering) and release to a pool. */
+export function removeAt(arr, i, release) {
+  release(arr[i]);
+  arr[i] = arr[arr.length - 1];
+  arr.pop();
 }
 
 /* ========================================= */
@@ -161,6 +185,8 @@ export function drawEnemies(ctx) {
 /**
  * Draws the boss if it exists.
  * Boss uses a larger font size (80px) than regular enemies.
+ * Hit feedback is the same flash regular enemies use (an HP bar was
+ * tried and rejected — inconsistent with the rest of the game).
  */
 export function drawBoss(ctx) {
   if (!gameState.boss) return;
@@ -168,18 +194,20 @@ export function drawBoss(ctx) {
   const boss = gameState.boss;
   ctx.font = EMOJI_FONT_80;
   ctx.textBaseline = 'top';
-  ctx.fillText(boss.emoji, boss.x, boss.y);
 
-  // Health bar above the boss: the fight is long (15-20 hits) and
-  // moving, so the player needs to see progress
-  const barW = boss.width;
-  const barH = 6;
-  const barY = boss.y - barH - 4;
-  const ratio = Math.max(0, boss.health / CONFIG.BOSS.health);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-  ctx.fillRect(boss.x, barY, barW, barH);
-  ctx.fillStyle = ratio > 0.5 ? '#4caf50' : ratio > 0.25 ? '#ffb300' : '#e53935';
-  ctx.fillRect(boss.x, barY, barW * ratio, barH);
+  if (boss.hitFlashUntil > performance.now()) {
+    const cx = boss.x + boss.width / 2;
+    const cy = boss.y + boss.height / 2;
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.translate(cx, cy);
+    ctx.scale(1.15, 1.15);
+    ctx.translate(-cx, -cy);
+    ctx.fillText(boss.emoji, boss.x, boss.y);
+    ctx.restore();
+  } else {
+    ctx.fillText(boss.emoji, boss.x, boss.y);
+  }
 
   drawHitbox(ctx, boss, 'purple');
 }
@@ -247,8 +275,25 @@ export function updateChicken(canvas, dtFactor = 1) {
  * Eggs move upward. Removes eggs that go off-screen.
  */
 export function updateEggs(dtFactor = 1) {
-  gameState.eggs = gameState.eggs.filter(e => e.y > 0);
-  gameState.eggs.forEach(e => e.y -= CONFIG.EGG.speed * dtFactor);
+  for (let i = gameState.eggs.length - 1; i >= 0; i--) {
+    const e = gameState.eggs[i];
+    e.y -= CONFIG.EGG.speed * dtFactor;
+    if (e.y <= 0) removeAt(gameState.eggs, i, releaseEgg);
+  }
+}
+
+/**
+ * Spawns an egg projectile (from the pool) centered at the given
+ * position. Called from the input handler on every shot.
+ */
+export function spawnEgg(x, y) {
+  const egg = eggPool.pop() || {};
+  egg.x = x;
+  egg.y = y;
+  egg.width = CONFIG.EGG.radius * 2;
+  egg.height = CONFIG.EGG.radius * 2;
+  egg.dead = false;
+  gameState.eggs.push(egg);
 }
 
 /**
@@ -267,8 +312,23 @@ export function updateEnemies(canvas, dtFactor = 1) {
     setGrassState('moving');
   }
 
-  gameState.enemies = gameState.enemies.filter(e => {
-    e.y += e.speed * dtFactor;
+  const zigPeriod = CONFIG.PATTERN.zigzag.period;
+  const diveTrigger = CONFIG.PATTERN.dive.trigger * viewport.height;
+
+  for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+    const e = gameState.enemies[i];
+
+    // Vertical fall. Dive enemies accelerate once past the trigger line.
+    const vScale = (e.pattern === 'dive' && e.y > diveTrigger) ? e.diveMult : 1;
+    e.y += e.speed * dtFactor * vScale;
+
+    // Zigzag enemies sway horizontally around their spawn column.
+    if (e.pattern === 'zigzag') {
+      e.ageSec += dtFactor / 60;   // dtFactor is 1 @60fps → seconds elapsed
+      const sway = e.spawnX + e.amp * Math.sin((2 * Math.PI * e.ageSec) / zigPeriod);
+      // Keep the hitbox fully on the field so edge enemies stay hittable
+      e.x = Math.max(0, Math.min(viewport.width - e.width, sway));
+    }
 
     // Enemy passed the bottom edge
     if (e.y > viewport.height) {
@@ -280,10 +340,9 @@ export function updateEnemies(canvas, dtFactor = 1) {
         setGrassState('static');
       }
 
-      return false; // Remove enemy
+      removeAt(gameState.enemies, i, releaseEnemy);
     }
-    return true; // Keep enemy
-  });
+  }
 }
 
 /**
@@ -326,14 +385,23 @@ export function updateBoss(canvas, dtFactor = 1) {
  * Removes items that go off-screen (not collected).
  */
 export function updateItems(canvas, dtFactor = 1) {
-  gameState.corns = gameState.corns.filter(c => c.y < viewport.height);
-  gameState.corns.forEach(c => c.y += CONFIG.CORN.speed * dtFactor);
+  for (let i = gameState.corns.length - 1; i >= 0; i--) {
+    const c = gameState.corns[i];
+    c.y += CONFIG.CORN.speed * dtFactor;
+    if (c.y >= viewport.height) removeAt(gameState.corns, i, releaseItem);
+  }
 
-  gameState.wheats = gameState.wheats.filter(w => w.y < viewport.height);
-  gameState.wheats.forEach(w => w.y += CONFIG.WHEAT.speed * dtFactor);
+  for (let i = gameState.wheats.length - 1; i >= 0; i--) {
+    const w = gameState.wheats[i];
+    w.y += CONFIG.WHEAT.speed * dtFactor;
+    if (w.y >= viewport.height) removeAt(gameState.wheats, i, releaseItem);
+  }
 
-  gameState.peppers = gameState.peppers.filter(p => p.y < viewport.height);
-  gameState.peppers.forEach(p => p.y += CONFIG.PEPPER.speed * dtFactor);
+  for (let i = gameState.peppers.length - 1; i >= 0; i--) {
+    const p = gameState.peppers[i];
+    p.y += CONFIG.PEPPER.speed * dtFactor;
+    if (p.y >= viewport.height) removeAt(gameState.peppers, i, releaseItem);
+  }
 }
 
 /* ========================================= */
@@ -345,15 +413,17 @@ export function updateItems(canvas, dtFactor = 1) {
 /* ========================================= */
 
 /**
- * Picks an enemy type for the current score using the active spawn
- * phase's weight table. Phases are sorted by fromScore; the last
- * phase whose threshold is reached wins.
+ * Picks an enemy type using the spawn-phase weight table. Phase index
+ * is driven by progress within the current cycle, shifted up by one
+ * per completed wave: wave 2 starts at the dog/cat mix, wave 4+ runs
+ * the final mix from the first second.
  */
-function pickEnemyType(score) {
-  let phase = CONFIG.ENEMY.phases[0];
-  for (const p of CONFIG.ENEMY.phases) {
-    if (score >= p.fromScore) phase = p;
-  }
+function pickEnemyType() {
+  const progress = gameState.score - gameState.cycleStartScore;
+  let base = 0;
+  CONFIG.ENEMY.phases.forEach((p, i) => { if (progress >= p.fromScore) base = i; });
+  const idx = Math.min(CONFIG.ENEMY.phases.length - 1, base + (gameState.wave - 1));
+  const phase = CONFIG.ENEMY.phases[idx];
 
   const entries = CONFIG.ENEMY.types
     .map(t => [t, phase.weights[t.id] || 0])
@@ -372,9 +442,9 @@ function pickEnemyType(score) {
  * Spawns a regular enemy or triggers boss.
  *
  * Boss spawn conditions:
- *   - Score >= scoreBeforeBoss
+ *   - Score >= nextBossScore (per-cycle threshold)
  *   - No boss currently active
- *   - Boss not already spawned this round
+ *   - Boss not already spawned this cycle
  *
  * If boss is active or was spawned, no regular
  * enemies spawn until boss fight ends.
@@ -384,15 +454,18 @@ function pickEnemyType(score) {
  */
 export function spawnEnemy(canvas) {
   // Check if it's time to spawn the boss
-  if (gameState.score >= CONFIG.GAME.scoreBeforeBoss && !gameState.boss && !gameState.bossSpawned) {
+  if (gameState.score >= gameState.nextBossScore && !gameState.boss && !gameState.bossSpawned) {
     const bossX = Math.random() * (viewport.width - CONFIG.BOSS.size);
     gameState.boss = {
       x: bossX,
       y: -CONFIG.BOSS.size,
       width: CONFIG.BOSS.size,
       height: CONFIG.BOSS.size,
-      health: CONFIG.BOSS.health,
+      // HP parity: boss scales with the wave like regular enemies,
+      // keeping the fight at 15-20 hits against the grown egg damage
+      health: Math.round(CONFIG.BOSS.health * cycleHpMult(gameState.wave)),
       speed: CONFIG.BOSS.speed,
+      hitFlashUntil: 0,
       emoji: CONFIG.BOSS.emoji,
       // Sweep toward the far side of the screen (spawned left goes
       // right and vice versa), then ping-pongs between the edges
@@ -405,18 +478,52 @@ export function spawnEnemy(canvas) {
   // Don't spawn regular enemies during boss fight
   if (gameState.boss || gameState.bossSpawned) return;
 
-  const type = pickEnemyType(gameState.score);
+  const type = pickEnemyType();
 
   // Random x position within safe margins
   const x = Math.random() * (viewport.width - CONFIG.ENEMY.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
 
-  gameState.enemies.push({
-    x, y: -CONFIG.ENEMY.size,
-    width: CONFIG.ENEMY.size, height: CONFIG.ENEMY.size,
-    emoji: type.emoji, speed: type.speed,
-    hits: 0, maxHits: type.hp,
-    hitFlashUntil: 0
-  });
+  // Reuse a pooled enemy: EVERY field is reassigned (pooled objects
+  // keep stale values from their previous life)
+  // Roll a movement pattern. Eligible types (dog/wolf) carry exactly one
+  // non-straight option; from wave 2 it wins with patternChance(wave).
+  let pattern = 'straight';
+  if (type.patterns.length > 1 && Math.random() < patternChance(gameState.wave)) {
+    pattern = type.patterns[1];
+  }
+
+  // Reuse a pooled enemy: EVERY field is reassigned (pooled objects
+  // keep stale values from their previous life)
+  const enemy = enemyPool.pop() || {};
+  enemy.x = x;
+  enemy.y = -CONFIG.ENEMY.size;
+  enemy.width = CONFIG.ENEMY.size;
+  enemy.height = CONFIG.ENEMY.size;
+  enemy.emoji = type.emoji;
+  enemy.speed = type.speed;
+  enemy.hits = 0;
+  enemy.maxHits = Math.round(type.hp * cycleHpMult(gameState.wave));
+  enemy.hitFlashUntil = 0;
+  enemy.dead = false;
+  // Pattern state (reassigned unconditionally — pooled objects are stale)
+  enemy.pattern = pattern;
+  enemy.spawnX = x;                              // zigzag oscillates around this
+  enemy.ageSec = 0;                              // seconds alive, drives zigzag phase
+  enemy.amp = pattern === 'zigzag' ? zigzagAmp(gameState.wave) : 0;
+  enemy.diveMult = pattern === 'dive' ? diveMult(gameState.wave) : 1;
+  gameState.enemies.push(enemy);
+}
+
+/** Reuses a pooled item (corn/wheat/pepper share a shape). */
+function spawnItem(arr, size) {
+  const x = Math.random() * (viewport.width - size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
+  const item = itemPool.pop() || {};
+  item.x = x;
+  item.y = -size;
+  item.width = size;
+  item.height = size;
+  item.dead = false;
+  arr.push(item);
 }
 
 /**
@@ -425,8 +532,7 @@ export function spawnEnemy(canvas) {
  * and permanently increases egg damage.
  */
 export function spawnCorn(canvas) {
-  const x = Math.random() * (viewport.width - CONFIG.CORN.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
-  gameState.corns.push({ x, y: -CONFIG.CORN.size, width: CONFIG.CORN.size, height: CONFIG.CORN.size });
+  spawnItem(gameState.corns, CONFIG.CORN.size);
 }
 
 /**
@@ -435,8 +541,7 @@ export function spawnCorn(canvas) {
  * (capped at maxHealth).
  */
 export function spawnWheat(canvas) {
-  const x = Math.random() * (viewport.width - CONFIG.WHEAT.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
-  gameState.wheats.push({ x, y: -CONFIG.WHEAT.size, width: CONFIG.WHEAT.size, height: CONFIG.WHEAT.size });
+  spawnItem(gameState.wheats, CONFIG.WHEAT.size);
 }
 
 /**
@@ -445,6 +550,5 @@ export function spawnWheat(canvas) {
  * and progresses permanent chicken speed.
  */
 export function spawnPepper(canvas) {
-  const x = Math.random() * (viewport.width - CONFIG.PEPPER.size - CONFIG.SPAWN.edgeMargin * 2) + CONFIG.SPAWN.edgeMargin;
-  gameState.peppers.push({ x, y: -CONFIG.PEPPER.size, width: CONFIG.PEPPER.size, height: CONFIG.PEPPER.size });
+  spawnItem(gameState.peppers, CONFIG.PEPPER.size);
 }

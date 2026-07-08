@@ -10,9 +10,14 @@
 /* ========================================= */
 
 import { CONFIG } from './config.js';
-import { gameState, chickenPermSpeed } from './state.js';
+import { gameState, chickenPermSpeed, startNextWave } from './state.js';
 import { updateUI, setGrassState } from './ui.js';
-import { soundState, splatSound, damageSound, chickenEatSound } from '../js/music.js';
+import { removeAt, releaseEgg, releaseEnemy, releaseItem } from './entities.js';
+import { resetGrid, insertGrid, queryGrid } from './spatial.js';
+import { soundState, splatSound, damageSound, chickenEatSound, victorySound } from '../js/music.js';
+
+/* Reused query output (SCALE-3: no per-frame allocation) */
+const candidates = [];
 
 /* ========================================= */
 /* AABB COLLISION CHECK                      */
@@ -33,29 +38,33 @@ function isColliding(a, b) {
 /* ========================================= */
 /* MAIN COLLISION HANDLER                    */
 /* Called once per frame from gameLoop.       */
-/* Uses Set-based removal to avoid index     */
-/* shifting bugs when splicing arrays.       */
+/* Hits mark entities with a `dead` flag;    */
+/* one backward sweep at the end compacts    */
+/* the arrays in place and releases dead     */
+/* entities to the pools (SCALE-3 — no Set/  */
+/* array allocation per frame).              */
 /* ========================================= */
 
 export function handleCollisions() {
 
-  /* --- Track which eggs and enemies to remove --- */
-  /* Using Sets prevents duplicate removal and      */
-  /* avoids index corruption from mid-loop splice   */
-  const eggsToRemove = new Set();
-  const enemiesToRemove = new Set();
+  /* --- Broad phase: enemies into the grid once per frame (SCALE-4) --- */
+  resetGrid();
+  for (const enemy of gameState.enemies) insertGrid(enemy);
 
   /* ----------------------------------------- */
   /* EGGS vs ENEMIES                           */
   /* Each egg deals eggDamage to enemy.         */
   /* Enemy dies when hits >= maxHits.            */
   /* Score +10 per enemy killed.                */
+  /* Grid narrows each egg to enemies sharing  */
+  /* a cell; exact check stays isColliding.    */
   /* ----------------------------------------- */
 
-  gameState.enemies.forEach((enemy, eIdx) => {
-    gameState.eggs.forEach((egg, eggIdx) => {
-      // Skip already-marked objects
-      if (eggsToRemove.has(eggIdx) || enemiesToRemove.has(eIdx)) return;
+  for (const egg of gameState.eggs) {
+    if (egg.dead) continue;
+
+    for (const enemy of queryGrid(egg, candidates)) {
+      if (enemy.dead) continue;
 
       if (isColliding(egg, enemy)) {
         enemy.hits += gameState.eggDamage;
@@ -69,24 +78,32 @@ export function handleCollisions() {
         }
 
         // Egg is always consumed on hit
-        eggsToRemove.add(eggIdx);
+        egg.dead = true;
 
         // Check if enemy is dead
         if (enemy.hits >= enemy.maxHits) {
-          enemiesToRemove.add(eIdx);
+          enemy.dead = true;
           gameState.score += 10;
         }
+
+        break; // egg consumed, stop scanning candidates
       }
-    });
+    }
+  }
 
-    /* ----------------------------------------- */
-    /* CHICKEN vs ENEMIES                        */
-    /* Direct contact deals 1 HP damage.          */
-    /* Game over if health reaches 0.             */
-    /* ----------------------------------------- */
+  /* ----------------------------------------- */
+  /* CHICKEN vs ENEMIES                        */
+  /* Direct contact deals 1 HP damage.          */
+  /* Game over if health reaches 0.             */
+  /* Enemies killed by an egg this frame are   */
+  /* skipped (dead flag), as before.           */
+  /* ----------------------------------------- */
 
-    if (!enemiesToRemove.has(eIdx) && isColliding(gameState.chicken, enemy)) {
-      enemiesToRemove.add(eIdx);
+  for (const enemy of queryGrid(gameState.chicken, candidates)) {
+    if (enemy.dead) continue;
+
+    if (isColliding(gameState.chicken, enemy)) {
+      enemy.dead = true;
       gameState.health--;
 
       if (!soundState.sfxMuted) {
@@ -99,11 +116,7 @@ export function handleCollisions() {
         setGrassState('static');
       }
     }
-  });
-
-  /* --- Safe removal: splice from end to start to preserve indices --- */
-  [...enemiesToRemove].sort((a, b) => b - a).forEach(i => gameState.enemies.splice(i, 1));
-  [...eggsToRemove].sort((a, b) => b - a).forEach(i => gameState.eggs.splice(i, 1));
+  }
 
   /* ----------------------------------------- */
   /* CHICKEN vs CORN (power-up)                */
@@ -114,26 +127,25 @@ export function handleCollisions() {
   /* Speed boost belongs to the pepper item.    */
   /* ----------------------------------------- */
 
-  gameState.corns = gameState.corns.filter(corn => {
-    if (isColliding(gameState.chicken, corn)) {
+  for (let i = gameState.corns.length - 1; i >= 0; i--) {
+    if (isColliding(gameState.chicken, gameState.corns[i])) {
       gameState.eggDamage += CONFIG.BOOST.damageIncrease;
 
       if (!soundState.sfxMuted) {
         chickenEatSound.play();
       }
 
-      return false; // Remove corn
+      removeAt(gameState.corns, i, releaseItem);
     }
-    return true; // Keep corn
-  });
+  }
 
   /* ----------------------------------------- */
   /* CHICKEN vs WHEAT (healing)                */
   /* Restores 1 HP, capped at maxHealth.        */
   /* ----------------------------------------- */
 
-  gameState.wheats = gameState.wheats.filter(wheat => {
-    if (isColliding(gameState.chicken, wheat)) {
+  for (let i = gameState.wheats.length - 1; i >= 0; i--) {
+    if (isColliding(gameState.chicken, gameState.wheats[i])) {
       if (gameState.health < CONFIG.GAME.maxHealth) {
         gameState.health++;
       }
@@ -142,10 +154,9 @@ export function handleCollisions() {
         chickenEatSound.play();
       }
 
-      return false; // Remove wheat
+      removeAt(gameState.wheats, i, releaseItem);
     }
-    return true; // Keep wheat
-  });
+  }
 
   /* ----------------------------------------- */
   /* CHICKEN vs PEPPER (power-up)              */
@@ -157,8 +168,8 @@ export function handleCollisions() {
   /* outruns the game.                          */
   /* ----------------------------------------- */
 
-  gameState.peppers = gameState.peppers.filter(pepper => {
-    if (isColliding(gameState.chicken, pepper)) {
+  for (let i = gameState.peppers.length - 1; i >= 0; i--) {
+    if (isColliding(gameState.chicken, gameState.peppers[i])) {
       // Triangular permanent speed progression (hard cap)
       if (gameState.speedLevel < CONFIG.CHICKEN.maxSpeedLevel) {
         gameState.peppersTowardNextSpeed++;
@@ -178,45 +189,48 @@ export function handleCollisions() {
         chickenEatSound.play();
       }
 
-      return false; // Remove pepper
+      removeAt(gameState.peppers, i, releaseItem);
     }
-    return true; // Keep pepper
-  });
+  }
 
   /* ----------------------------------------- */
   /* EGGS vs BOSS                              */
   /* Boss takes eggDamage per hit.              */
-  /* Boss death = +500 score + victory screen.  */
+  /* Boss death = +500 score + next wave.       */
   /* Guard: if boss dies mid-loop from one egg, */
   /* remaining eggs skip via null check.        */
   /* ----------------------------------------- */
 
   if (gameState.boss) {
-    gameState.eggs = gameState.eggs.filter(egg => {
+    for (const egg of gameState.eggs) {
       // Boss may have been killed by a previous egg in this same frame
-      if (!gameState.boss) return true;
+      if (!gameState.boss) break;
+      if (egg.dead) continue;
 
       if (isColliding(egg, gameState.boss)) {
         gameState.boss.health -= gameState.eggDamage;
+
+        // Same hit flash as regular enemies (rendered by drawBoss)
+        gameState.boss.hitFlashUntil = performance.now() + 120;
 
         if (!soundState.sfxMuted) {
           splatSound.play();
         }
 
-        // Check if boss is defeated
+        // Egg is always consumed on hit
+        egg.dead = true;
+
+        // Boss defeated: +500 and the game continues — next wave
         if (gameState.boss.health <= 0) {
           gameState.boss = null;
           gameState.score += 500;
-          gameState.gameOver = true;
-          gameState.gameOverReason = 'Victory! The Chicken defeated the boss!';
-          gameState.isVictory = true;
-          setGrassState('static');
+          startNextWave(performance.now());
+          if (!soundState.sfxMuted) {
+            victorySound.play();
+          }
         }
-
-        return false; // Remove egg
       }
-      return true; // Keep egg
-    });
+    }
 
     /* ----------------------------------------- */
     /* CHICKEN vs BOSS (instant death)           */
@@ -229,6 +243,20 @@ export function handleCollisions() {
       gameState.gameOver = true;
       gameState.gameOverReason = 'The Chicken was crushed by the boss!';
       setGrassState('static');
+    }
+  }
+
+  /* --- Sweep: compact arrays in place, release dead to pools --- */
+  for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+    if (gameState.enemies[i].dead) {
+      gameState.enemies[i].dead = false;
+      removeAt(gameState.enemies, i, releaseEnemy);
+    }
+  }
+  for (let i = gameState.eggs.length - 1; i >= 0; i--) {
+    if (gameState.eggs[i].dead) {
+      gameState.eggs[i].dead = false;
+      removeAt(gameState.eggs, i, releaseEgg);
     }
   }
 

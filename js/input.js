@@ -10,6 +10,8 @@
 /*   Space           — shoot egg             */
 /*   P               — toggle pause          */
 /*   H               — toggle debug hitboxes */
+/*   1-9             — DEBUG jump to wave N   */
+/*                     (remove before deploy) */
 /*                                           */
 /* Safety:                                   */
 /*   - Input is ignored when typing in       */
@@ -19,8 +21,9 @@
 /*     avoid scrolling/zooming on mobile     */
 /* ========================================= */
 
-import { gameState } from './state.js';
+import { gameState, chickenPermSpeed } from './state.js';
 import { CONFIG } from './config.js';
+import { spawnEgg } from './entities.js';
 import { soundState, eggPopSound } from './music.js';
 import { showPause, hidePause, setGrassState } from './ui.js';
 
@@ -63,6 +66,20 @@ export function setupInput() {
       // Toggle debug hitbox visualization
       CONFIG.DEBUG_HITBOXES = !CONFIG.DEBUG_HITBOXES;
       console.log('Hitboxes:', CONFIG.DEBUG_HITBOXES ? 'ON' : 'OFF');
+    } else if (/^Digit[1-9]$/.test(e.code)) {
+      /* ===== DEBUG — remove before deploy (batch-12 playtest) =====
+         Number key N jumps to wave N with the egg-damage / chicken-speed
+         a median player would realistically have entering that wave
+         (sim-derived: dmg ~7*(wave-1), speed level +1/wave capped at 3).
+         Lets us feel movement patterns at their real difficulty context
+         instead of wave-1 stats. */
+      const w = parseInt(e.code.slice(5), 10);
+      gameState.wave = w;
+      gameState.cycleStartScore = gameState.score;
+      gameState.eggDamage = Math.max(1, 7 * (w - 1));
+      gameState.speedLevel = Math.min(CONFIG.CHICKEN.maxSpeedLevel, w - 1);
+      gameState.chicken.speed = chickenPermSpeed();
+      console.log(`DEBUG jump: wave ${w}, eggDamage ${gameState.eggDamage}, speed ${gameState.chicken.speed}`);
     }
   });
 
@@ -136,13 +153,11 @@ function handleShoot() {
 
   // Enforce cooldown between shots
   if (now - gameState.lastShotTime > CONFIG.EGG.cooldown) {
-    // Spawn egg centered above the chicken
-    gameState.eggs.push({
-      x: gameState.chicken.x + gameState.chicken.width / 2 - CONFIG.EGG.radius,
-      y: gameState.chicken.y,
-      width: CONFIG.EGG.radius * 2,
-      height: CONFIG.EGG.radius * 2
-    });
+    // Spawn egg centered above the chicken (pooled, SCALE-3)
+    spawnEgg(
+      gameState.chicken.x + gameState.chicken.width / 2 - CONFIG.EGG.radius,
+      gameState.chicken.y
+    );
 
     gameState.lastShotTime = now;
 

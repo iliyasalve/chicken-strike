@@ -24,6 +24,7 @@ const el = {
   highScore: document.getElementById('high-score'),
   healthBar: document.getElementById('health-bar'),
   eggDamage: document.getElementById('egg-damage'),
+  wave: document.getElementById('wave'),
   chickenSpeed: document.getElementById('chicken-speed'),
   missedBar: document.getElementById('missed-bar'),
   gameOverScreen: document.getElementById('game-over-screen'),
@@ -75,7 +76,7 @@ export function setGrassState(state) {
    querySelectorAll). */
 const rendered = {
   score: null, highScore: null, eggDamage: null, speed: null,
-  health: null, missed: null, shake: null
+  health: null, missed: null, shake: null, wave: null
 };
 const segments = { health: [], missed: [] };
 
@@ -102,6 +103,12 @@ export function updateUI() {
   if (gameState.eggDamage !== rendered.eggDamage) {
     rendered.eggDamage = gameState.eggDamage;
     el.eggDamage.textContent = `🥚 Egg Damage: ${gameState.eggDamage}`;
+  }
+
+  /* --- Wave counter --- */
+  if (gameState.wave !== rendered.wave) {
+    rendered.wave = gameState.wave;
+    el.wave.textContent = `🌊 Wave ${gameState.wave}`;
   }
 
   /* --- Chicken speed indicator (shows x2 while boosted) --- */

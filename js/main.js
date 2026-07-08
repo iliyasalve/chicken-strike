@@ -23,7 +23,7 @@ import {
   deleteByDeviceId, hasConsent, setConsent, isUsernameTaken, getUserId,
   startGameSession
 } from './leaderboard.js';
-import { soundState, gameOverSound, victorySound, unlockAudio } from '../js/music.js';
+import { soundState, gameOverSound, unlockAudio } from '../js/music.js';
 
 /* ========================================= */
 /* CANVAS SETUP                              */
@@ -82,16 +82,9 @@ function gameLoop(timestamp) {
     showGameOver(gameState.gameOverReason || 'Game Over!');
     showGameOverStats();
 
-    if (gameState.isVictory) {
-      if (!soundState.victorySoundPlayed && !soundState.sfxMuted) {
-        victorySound.play();
-        soundState.victorySoundPlayed = true;
-      }
-    } else {
-      if (!soundState.gameOverSoundPlayed && !soundState.sfxMuted) {
-        gameOverSound.play();
-        soundState.gameOverSoundPlayed = true;
-      }
+    if (!soundState.gameOverSoundPlayed && !soundState.sfxMuted) {
+      gameOverSound.play();
+      soundState.gameOverSoundPlayed = true;
     }
 
     loadGameOverLeaderboard();
@@ -111,6 +104,12 @@ function gameLoop(timestamp) {
     gameState.lastShotTime += pausedDelta;
     if (gameState.speedBoostActive) {
       gameState.speedBoostEndTime += pausedDelta;
+    }
+    // Active wave banner survives the pause too. Only shifted while
+    // active: pushing an expired timestamp forward could resurrect
+    // the banner (and its spawn freeze) after a long pause.
+    if (gameState.bannerUntil > timestamp) {
+      gameState.bannerUntil += pausedDelta;
     }
 
     // Keep the frame clock current so unpausing doesn't produce
@@ -145,27 +144,69 @@ function gameLoop(timestamp) {
   drawBoss(ctx);
   drawItems(ctx);
 
-  /* --- Spawn enemies at interval --- */
-  // Interval shrinks with score: faster enemies leave the screen sooner,
-  // so without this the on-screen density (and perceived difficulty) drops.
-  const spawnInterval = Math.max(
-    CONFIG.SPAWN.minInterval,
-    CONFIG.SPAWN.baseInterval - gameState.score * CONFIG.SPAWN.intervalReduction
-  );
-  if (timestamp - gameState.lastSpawnTime > spawnInterval) {
-    spawnEnemy(canvas);
-    gameState.lastSpawnTime = timestamp;
+  /* --- Wave banner (breather after a boss kill) --- */
+  // Styled like the HTML menus (beige panel, brown text) so it reads
+  // as UI instead of blending into the green field
+  if (timestamp < gameState.bannerUntil) {
+    const bannerText = `Wave ${gameState.wave}`;
+    const bx = viewport.width / 2;
+    const by = viewport.height / 2 - 40;
+    ctx.save();
+    ctx.font = 'bold 48px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const bw = ctx.measureText(bannerText).width + 80;
+    const bh = 96;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 25;
+    ctx.shadowOffsetY = 8;
+    ctx.fillStyle = 'rgba(255, 250, 230, 0.95)';  // menu panel beige
+    ctx.beginPath();
+    ctx.roundRect(bx - bw / 2, by - bh / 2, bw, bh, 15);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = '#5e3a00';                    // menu heading brown
+    ctx.fillText(bannerText, bx, by);
+    ctx.restore();
   }
 
-  /* --- Spawn ONE power-up (corn/pepper/wheat) at random interval --- */
-  /* Shared spawner: weighted random pick, so bonuses never flood the
-     screen and the next drop can't be predicted. */
-  if (timestamp - gameState.lastItemSpawnTime > gameState.nextItemInterval) {
-    spawnRandomItem();
+  /* --- Spawning (frozen while the wave banner shows) --- */
+  const inBanner = timestamp < gameState.bannerUntil;
+  if (inBanner) {
+    // Keep timers pinned so the banner doesn't cause a spawn burst after
+    gameState.lastSpawnTime = timestamp;
     gameState.lastItemSpawnTime = timestamp;
-    gameState.nextItemInterval = Math.floor(
-      Math.random() * (CONFIG.ITEM_SPAWN.maxInterval - CONFIG.ITEM_SPAWN.minInterval + 1)
-    ) + CONFIG.ITEM_SPAWN.minInterval;
+  } else {
+    /* --- Spawn enemies at interval --- */
+    // Density is driven by progress WITHIN the current wave, so every
+    // wave restarts as a slow trickle and ramps up toward its boss
+    // (a global-score density never resets and made wave 2+ start at
+    // the max-pace firehose — sim-verified unwinnable). The per-wave
+    // paceFactor then tightens the whole curve each wave; the hard
+    // floor keeps the stream readable on mobile.
+    const waveProgress = gameState.score - gameState.cycleStartScore;
+    const spawnInterval = Math.max(
+      CONFIG.CYCLE.minInterval,
+      Math.max(
+        CONFIG.SPAWN.minInterval,
+        CONFIG.SPAWN.baseInterval - waveProgress * CONFIG.SPAWN.intervalReduction
+      ) * Math.pow(CONFIG.CYCLE.paceFactor, gameState.wave - 1)
+    );
+    if (timestamp - gameState.lastSpawnTime > spawnInterval) {
+      spawnEnemy(canvas);
+      gameState.lastSpawnTime = timestamp;
+    }
+
+    /* --- Spawn ONE power-up (corn/pepper/wheat) at random interval --- */
+    /* Shared spawner: weighted random pick, so bonuses never flood the
+       screen and the next drop can't be predicted. */
+    if (timestamp - gameState.lastItemSpawnTime > gameState.nextItemInterval) {
+      spawnRandomItem();
+      gameState.lastItemSpawnTime = timestamp;
+      gameState.nextItemInterval = Math.floor(
+        Math.random() * (CONFIG.ITEM_SPAWN.maxInterval - CONFIG.ITEM_SPAWN.minInterval + 1)
+      ) + CONFIG.ITEM_SPAWN.minInterval;
+    }
   }
 
   animationFrameId = requestAnimationFrame(gameLoop);
@@ -343,7 +384,6 @@ function startGame() {
   // Fire-and-forget: the token arrives long before the game ends.
   startGameSession();
   soundState.gameOverSoundPlayed = false;
-  soundState.victorySoundPlayed = false;
   gameState.startTime = Date.now();
   hideStartMenu();
   hideGameOver();
