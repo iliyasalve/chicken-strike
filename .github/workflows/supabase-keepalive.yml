@@ -1,14 +1,19 @@
 # Pings the Supabase REST API so the free-tier project is not paused
-# for inactivity (~7 days without any API request). Any request with
-# the publishable key counts as activity; the key is already public
-# in js/leaderboard.js, so no secret is needed here.
+# for inactivity. Supabase pauses a free project after ~7 days of
+# insufficient DB activity; per their docs it wants "a few user
+# requests to the database each day" — so this MUST run daily. An
+# every-3-days cron (only ~2 pings/week) paused the project on
+# 2026-07-28 despite every ping returning HTTP 200.
+#
+# The publishable key is already public in js/leaderboard.js, so no
+# secret is needed here.
 name: Supabase keep-alive
 
 on:
   schedule:
-    # Every 3 days at 06:17 UTC. Odd minute on purpose: GitHub delays
-    # or drops cron jobs scheduled exactly on the hour due to load.
-    - cron: '17 6 */3 * *'
+    # Daily at 06:17 UTC. Odd minute on purpose: GitHub delays or drops
+    # cron jobs scheduled exactly on the hour due to load.
+    - cron: '17 6 * * *'
   # Manual run button for testing
   workflow_dispatch:
 
