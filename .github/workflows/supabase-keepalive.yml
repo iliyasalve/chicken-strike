@@ -1,9 +1,17 @@
 # Pings the Supabase REST API so the free-tier project is not paused
-# for inactivity. Supabase pauses a free project after ~7 days of
-# insufficient DB activity; per their docs it wants "a few user
-# requests to the database each day" — so this MUST run daily. An
-# every-3-days cron (only ~2 pings/week) paused the project on
-# 2026-07-28 despite every ping returning HTTP 200.
+# for inactivity. Per Supabase's "Project Pausing" docs the threshold is
+# "a few user requests to the database each day over the previous week" —
+# NOT one request a day. Two incidents so far:
+#
+#   2026-07-28  paused. Cron was '17 6 */3 * *' (~2 pings/week).
+#   2026-08-27  pause-warning email despite 30 days of green DAILY pings.
+#               Cause: one ping/day is a single request/day, which is
+#               below "a few each day". The project has no real user
+#               traffic, so this workflow is the only activity source.
+#
+# Hence: 4 scheduled slots a day x 3 requests = ~12 requests/day. The
+# extra slots also cover GitHub dropping or delaying scheduled runs under
+# load (2026-08-27's run fired 11h late, 2026-08-28's never fired).
 #
 # The publishable key is already public in js/leaderboard.js, so no
 # secret is needed here.
@@ -11,9 +19,9 @@ name: Supabase keep-alive
 
 on:
   schedule:
-    # Daily at 06:17 UTC. Odd minute on purpose: GitHub delays or drops
-    # cron jobs scheduled exactly on the hour due to load.
-    - cron: '17 6 * * *'
+    # Every 6 hours. Odd minute on purpose: GitHub delays or drops cron
+    # jobs scheduled exactly on the hour due to load.
+    - cron: '17 */6 * * *'
   # Manual run button for testing
   workflow_dispatch:
 
@@ -23,11 +31,16 @@ jobs:
     steps:
       - name: Ping leaderboard REST endpoint
         run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" \
-            "https://jaaolhmbvmoaikwqudoi.supabase.co/rest/v1/leaderboard?select=id&limit=1" \
-            -H "apikey: sb_publishable_y1Ui9F8AuURFjJWWcWJqRg_fGgqjSVi")
-          echo "Supabase responded with HTTP $status"
-          if [ "$status" != "200" ]; then
-            echo "::error::Keep-alive ping failed (HTTP $status) — project may be paused or unreachable"
+          fails=0
+          for i in 1 2 3; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" \
+              "https://jaaolhmbvmoaikwqudoi.supabase.co/rest/v1/leaderboard?select=id&limit=1" \
+              -H "apikey: sb_publishable_y1Ui9F8AuURFjJWWcWJqRg_fGgqjSVi")
+            echo "Ping $i: HTTP $status"
+            [ "$status" = "200" ] || fails=$((fails + 1))
+            [ "$i" = "3" ] || sleep 20
+          done
+          if [ "$fails" != "0" ]; then
+            echo "::error::Keep-alive: $fails/3 pings failed — project may be paused or unreachable"
             exit 1
           fi
